@@ -1,0 +1,30 @@
+{
+  "name": "chopin-backend",
+  "version": "0.1.0",
+  "description": "Discord Bot for music - Fetching everywhere !",
+  "main": "src/main.js",
+  "nodemonConfig": {
+    "ext": "js, html",
+    "ignore": [
+      "*.json",
+      "*.html"
+    ],
+    "delay": "2000000"
+  },
+  "scripts": {
+    "start": "nodemon src/main.js"
+  },
+  "keywords": [],
+  "author": "Raphix",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "discord.js": "^14.18.0",
+    "express": "^4.21.2",
+    "loguix": "^1.4.2",
+    "nodemon": "^3.1.9",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
+    "webmetrik": "^0.1.4"
+  }
+}
