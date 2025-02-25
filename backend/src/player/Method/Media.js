@@ -5,7 +5,8 @@ const plog = require("loguix").getInstance("Player")
 
 async function play(instance, song) {
     //const resource = await song.getResource()
-    const resource = createAudioResource(song.url)
+    //Test with a local file
+    const resource = createAudioResource("C:\\Users\\picot\\Downloads\\Confrontation_Replique_Raphix.mp3")
     console.log(resource)
     // Wait until connection is ready
     instance.connection.once(VoiceConnectionStatus.Ready, async () => {
