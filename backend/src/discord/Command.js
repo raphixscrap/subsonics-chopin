@@ -53,10 +53,18 @@ class Command {
                     })
                     SlashCommand.addStringOption(option => option.setName(SelOption.name).setDescription(SelOption.description).setRequired(SelOption.required).addChoices(choices))
                 }
+                if(SelOption.type === "FILE") {
+                    SlashCommand.addAttachmentOption(option => option.setName(SelOption.name).setDescription(SelOption.description).setRequired(SelOption.required))
+                }
 
             })
         }
 
+        /**
+         * @type {SlashCommandBuilder}
+         * @param {Client} client
+         * @param {Interaction} interaction
+         */
         this.data = {data: SlashCommand,  async execute(client, interaction) {callback(client, interaction)}}
             
     }

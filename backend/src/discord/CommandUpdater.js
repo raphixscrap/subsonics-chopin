@@ -50,10 +50,6 @@ client.commands = new Collection()
 
             }
 
-           
-
-            
-
             dlog.step.end("d_commands_refresh")
         } catch (error) {
             // And of course, make sure you catch and log any errors!

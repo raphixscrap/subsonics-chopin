@@ -18,7 +18,7 @@ const command = new Command("help", "Affiche la liste des commandes", (client, i
                     option.choices.forEach(choice => {
                         choices.push(choice.name)
                     })
-                    CommandName += " " + choices.join(" | ")
+                    CommandName += " <" + choices.join(" | ") +">"
                 }
             })
         } 
