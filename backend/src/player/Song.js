@@ -1,29 +1,43 @@
 const {LogType} = require('loguix')
 const { createAudioResource, StreamType } = require('@discordjs/voice');
-const ffprobe = require('ffprobe');
-const ffprobeStatic = require('ffprobe-static');
-const { getReadableDuration } = require('../utils/TimeConverter');
+
 
 const clog = new LogType("Song")
+const MediaInformation = require('../media/MediaInformation')
 
 class Song {
     title = "Aucun titre";
+    filename = "Aucun fichier";
     author = "Auteur inconnu"
     url;
-    thumbnail;
+    thumbnail = "https://radomisol.fr/wp-content/uploads/2016/08/cropped-note-radomisol-musique.png" ;
     duration;
     readduration;
     type;
+
+    constructor(properties) {
+        if(properties) {
+            this.title = properties.title ?? this.title
+            this.filename = properties.filename ?? this.filename
+            this.author = properties.author ?? this.author
+            this.url = properties.url ?? this.url
+            this.thumbnail = properties.thumbnail ?? this.thumbnail
+            this.duration = properties.duration ?? this.duration
+            this.readduration = properties.readduration ?? this.readduration
+            this.type = properties.type ?? this.type
+        }
+    }
 
     async processMedia(media, provider) {
         if(provider) this.author = provider
         // Check if media is a file or a link
         if(media.attachment) {
             this.url = media.attachment.url
+            this.filename = media.attachment.name
             this.type = "attachment"
         
             // In face, duration is null, get the metadata of the file to get the duration
-            await getMediaInformation(this, media)
+            await MediaInformation.getMediaInformation(this, media)
 
         } else {
             clog.error("Impossible de traiter le média")
@@ -47,31 +61,3 @@ class Song {
 }
 
 module.exports = {Song}
-
-async function getMediaInformation(instance, media, provider) {
-    try {
-        const info = await ffprobe(media.attachment.url, { path: ffprobeStatic.path });
-        if (info.streams?.[0]?.duration_ts) {
-            instance.duration = info.streams[0].duration;
-            instance.readduration = getReadableDuration(instance.duration)
-        } 
-        
-        // Vérification pour éviter une erreur si `streams[0]` ou `tags` n'existe pas
-        instance.thumbnail = info.streams?.[0]?.tags?.thumbnail ?? 
-            "https://radomisol.fr/wp-content/uploads/2016/08/cropped-note-radomisol-musique.png";
-        
-        // Obtenir le titre (sinon utiliser le nom du fichier)
-        instance.title = info.streams?.[0]?.tags?.title ?? media.attachment.name;
-        
-        // Obtenir l'auteur (s'il existe)
-        instance.author = info.streams?.[0]?.tags?.artist ?? instance.author;
-        
-
-      
-        
-    } catch (err) {
-        clog.error("Impossible de récupérer les informations de la musique : " + this.name)
-        clog.error(err)
-        return null;
-    }
-}

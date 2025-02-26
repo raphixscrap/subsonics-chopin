@@ -3,6 +3,7 @@ const { __glob } = require('../utils/GlobalVars')
 const PreviousDB = new Database("previous", __glob.PREVIOUSFILE, {}) 
 const {LogType} = require("loguix")
 const clog = new LogType("List")
+const { Song } = require('./Song')
 
 const AllLists = new Map()  // Map<guildId, List>
 
@@ -43,6 +44,9 @@ class List {
     }
 
     nextSong() {
+        if(this.current != null) {
+            this.addPreviousSong(this.current)
+        }
         var song = null;
         if(!this.shuffle) {
             song = this.next[0]
@@ -53,8 +57,10 @@ class List {
             this.next.splice(randomIndex, 1)
            
         }
+        this.setCurrent(song)
         return song
     }
+
 
     clearNext() {
         this.next = new Array();
@@ -62,6 +68,10 @@ class List {
 
     addNextSong(song) {
         this.next.push(song)
+    }
+
+    firstNext(song) {
+        this.next.unshift(song)
     }
 
     removeNextByIndex(index) {
@@ -75,15 +85,33 @@ class List {
     }
 
     getPrevious() {
-        return PreviousDB.data[this.guildId];
+        const previousList = new Array()
+
+        for(const song of PreviousDB.data[this.guildId]) {
+            previousList.push(new Song(song))
+        }
+        return previousList;
+
     }
 
     getPreviousSong() {
         if(PreviousDB.data[this.guildId].length > 0) {
+            return new Song(PreviousDB.data[this.guildId][0])
+        } else {
+            return null;
+        }
+    }
+
+    previousSong() {
+        if(this.current != null) {
+            this.firstNext(this.current)
+        }
+        if(PreviousDB.data[this.guildId].length > 0) {
             const song = PreviousDB.data[this.guildId][0]
+            // Remove the song from the previous list
             PreviousDB.data[this.guildId].splice(0, 1)
             savePrevious()
-            return song
+            return new Song(song)
         } else {
             return null;
         }
@@ -116,6 +144,8 @@ class List {
         this.clearNext();
         this.current = null
         this.shuffle = false;
+        AllLists.delete(this.guildId)
+       
     }
 
     setShuffle(value) {

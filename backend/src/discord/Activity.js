@@ -13,10 +13,10 @@ function setMusicActivity(songName, artistName, imageUrl) {
     const client = bot.getClient()
     client.user.setActivity(`${songName} - ${artistName}`,{
             type: ActivityType.Listening,
-            /*assets: {
+            assets: {
                 largeImage: imageUrl,
                 largeText: songName
-            }*/
+            }
     });
     dlog.log(`Activité mise à jour : ${songName} - ${artistName}`)
 }

@@ -5,7 +5,7 @@ const { Song } = require('../../player/Song');
 
 const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal", async (client, interaction) => {
 
-    if(!interaction.member.voice.channel) return interaction.reply({content:"Vous devez rejoindre un salon vocal pour lire un(e) titre / playlist !", ephemeral: true})
+    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour jouer un média !").send(interaction, true)
 
     const media = interaction.options.get("media")
     const now = interaction.options.getBoolean("now") || false
@@ -34,9 +34,9 @@ const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal
     }
         
     embed.setDescription('**Titre : **' + song.title)
-    embed.addField('**Durée : **'+ song.readduration, "")
-    embed.addField("**Artiste : **" + song.author, "")
-    embed.addField('**Demandé par **' + interaction.member.user.username,"")
+    embed.addField('**Durée : **', song.readduration)
+    embed.addField("**Artiste : **",song.author)
+    embed.addField('**Demandé par **' + interaction.member.user.username, "")
     embed.setThumbnail(song.thumbnail)
     
     

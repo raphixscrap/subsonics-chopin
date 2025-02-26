@@ -20,7 +20,7 @@ function getClient() {
 
 
 function init() {
-    
+        
     client.once('ready', () => {
         dlog.log("Connexion au Bot Discord réussi ! Connecté en tant que : " + client.user.tag)
 

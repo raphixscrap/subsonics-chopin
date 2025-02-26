@@ -1,19 +1,28 @@
-const {createAudioResource, VoiceConnectionStatus} = require('@discordjs/voice');
+const {createAudioResource, VoiceConnectionStatus, createAudioPlayer} = require('@discordjs/voice');
 const {LogType} = require('loguix')
 const clog = new LogType("Media")
 const plog = require("loguix").getInstance("Player")
 
 async function play(instance, song) {
-    //const resource = await song.getResource()
-    //Test with a local file
-    const resource = createAudioResource("C:\\Users\\picot\\Downloads\\Confrontation_Replique_Raphix.mp3")
-    console.log(resource)
-    // Wait until connection is ready
-    instance.connection.once(VoiceConnectionStatus.Ready, async () => {
-        instance.player.play(resource)
-    })
 
-    plog.log(`GUILD : ${instance.guildId} - Lecture de la musique : ${song.title}`)
+
+       try {
+          
+            instance.player = createAudioPlayer()
+            instance.generatePlayerEvents()
+            const player = instance.player
+            const resource = await song.getResource() // Remplace par ton fichier audio
+
+            player.play(resource);
+            instance.connection.subscribe(player);
+            clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - Filename : ${song.filename}`) 
+
+       } catch(e) {
+            clog.error("Erreur lors de la lecture de la musique : " + song.title)
+            clog.error(e)
+       }
+    
+
 }
 
 module.exports = {play}

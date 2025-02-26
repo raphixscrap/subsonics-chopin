@@ -142,3 +142,5 @@ docs/_book
 test/
 
 data/
+
+__DEBUG.js

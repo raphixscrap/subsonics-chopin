@@ -81,8 +81,12 @@ class Embed {
         return this.embed
     }
 
-    send(interaction) {
-        interaction.reply({embeds: [this.build()]})
+    send(interaction, ephemeral) {
+        if(ephemeral) {
+            interaction.reply({embeds: [this.build()], ephemeral: true})
+        } else {
+            interaction.reply({embeds: [this.build()]})
+        }
     }
 }
 
