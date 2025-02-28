@@ -23,7 +23,10 @@ const command = new Command("liste", "Affiche la file d'attente", (client, inter
             embed.setColor(0x15e6ed)
             embed.setThumbnail("https://www.iconsdb.com/icons/download/white/list-2-64.png")
             embed.setTitle('**File d\'attente :**')
+            embed.setDescription('**' + queue.length + ' musiques**')
             queue.forEach((song, index) => {
+                // max 24 fields
+                if(index > 10) return
                 embed.addField(`**${index+1} - ${song.title}**`, `**Durée : **${song.readduration}\n**Artiste : **${song.author}`)
             })
             

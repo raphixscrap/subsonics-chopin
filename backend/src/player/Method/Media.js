@@ -1,21 +1,21 @@
-const {createAudioResource, VoiceConnectionStatus, createAudioPlayer} = require('@discordjs/voice');
+const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType} = require('@discordjs/voice');
 const {LogType} = require('loguix')
 const clog = new LogType("Media")
 const plog = require("loguix").getInstance("Player")
 
 async function play(instance, song) {
-
-
        try {
           
             instance.player = createAudioPlayer()
             instance.generatePlayerEvents()
             const player = instance.player
-            const resource = await song.getResource() // Remplace par ton fichier audio
+            song.resource = await createAudioResource(song.url, {
+                    inputType: StreamType.Arbitrary
+               }) // Remplace par ton fichier audio
 
-            player.play(resource);
+            player.play(song.resource);
             instance.connection.subscribe(player);
-            clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - Filename : ${song.filename}`) 
+            clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - id : ${song.id}`) 
 
        } catch(e) {
             clog.error("Erreur lors de la lecture de la musique : " + song.title)

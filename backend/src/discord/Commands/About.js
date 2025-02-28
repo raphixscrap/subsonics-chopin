@@ -11,7 +11,7 @@ const command = new Command("about", "Affiche des informations sur le bot", (cli
     const seconds = Math.floor(uptime % 60);
 
     const embed = new Embed()
-    embed.setColor(0xb0f542)
+    embed.setColor(237, 12, 91)
     embed.setThumbnail("https://cdn.discordapp.com/avatars/" + client.user.id + "/" + client.user.avatar + ".png")
     embed.setTitle('Subsonics - Chopin')
     embed.addField('Informations',"")

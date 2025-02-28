@@ -68,6 +68,9 @@ function init() {
         }
     })
 
+    // TODO: Implement the disconnect event for the bot
+
+
     
 
     client.login(config.getToken())

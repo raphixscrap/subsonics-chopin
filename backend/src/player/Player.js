@@ -6,6 +6,7 @@ const plog = new LogType("Player")
 const clog = new LogType("Signal")
 
 const media = require('./Method/Media');
+const youtube = require('./Method/Youtube');
 const Activity = require('../discord/Activity');
 
 const AllPlayers = new Map()
@@ -75,6 +76,7 @@ class Player {
         });
 
         this.player.on(AudioPlayerStatus.Playing, () => {
+        
             plog.log(`GUILD : ${this.guildId} - Le player est en train de jouer le contenu suivant : ${this.queue.current.title}`);
             Activity.setMusicActivity(this.queue.current.title, this.queue.current.author, this.queue.current.thumbnail)
             
@@ -98,11 +100,18 @@ class Player {
         if(this.queue.current != null) {
             this.player.stop()
         }
+
         this.queue.setCurrent(song)
 
-       if(song.type = "attachment") {
+       if(song.type == "attachment") {
             media.play(this, song)
        }
+       if(song.type == 'youtube') {
+            youtube.play(this, song)
+       }
+
+
+       // TODO: Créer une méthode pour les autres types de médias
     }
 
     async add(song) {
@@ -113,6 +122,19 @@ class Player {
 
         this.queue.addNextSong(song)
         plog.log(`GUILD : ${this.guildId} - La musique a été ajoutée à la liste de lecture : ${song.title}`)
+    }
+
+    async readPlaylist(playlist, now) {
+        if(this.player.state.status == AudioPlayerStatus.Idle && this.queue.current === null && this.queue.next.length === 0) {
+            this.play(playlist.songs[0])
+        } 
+        if(now) {
+            this.play(playlist.songs[0])
+            this.queue.addNextPlaylist(playlist, true)
+        } else {
+            this.queue.addNextPlaylist(playlist)
+        }
+        plog.log(`GUILD : ${this.guildId} - La playlist a été ajoutée à la liste de lecture : ${playlist.title}`)
     }
 
     async pause() {

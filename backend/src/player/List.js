@@ -177,6 +177,16 @@ class List {
         }
     }
 
+    addNextPlaylist(playlist, firstAlreadyPlayed) {
+        if(firstAlreadyPlayed) {
+            playlist.songs.shift()
+        }
+     
+        for(const song of playlist.songs) {
+            this.addNextSong(song)
+        }
+        
+    }
 
     
 
