@@ -27,32 +27,82 @@ async function getSong(url) {
             return null;
         }
         const trackInfo = await spotifyApi.getTrack(trackId);
+
         const trackName = trackInfo.body.name;
         const artistName = trackInfo.body.artists[0].name;
 
         return `${trackName} - ${artistName}`;
     } catch (error) {
-        console.error('Erreur lors de la récupération des données :', error);
-
+       
+        clog.error("Impossible de récupérer les informations de la piste Spotify à partir de l'URL");
+        clog.error(error);
+        return null;
     }
 }
 
-async function getAlbum(albumId) {
+async function getAlbum(url) {
+
+    try {
+        
+
+    const creditdata = await spotifyApi.clientCredentialsGrant();
+    spotifyApi.setAccessToken(creditdata.body['access_token']);
+
+    const parts = url.split('/');
+    const albumId = parts[parts.indexOf('album') + 1].split('?')[0];
+
+    const data = await spotifyApi.getAlbum(albumId);
+    const info = data.body;
+
+    if(!info) {
+        clog.error("Impossible de récupérer les informations de l'album Spotify à partir de l'URL");
+        return null;
+    }
+
+    clog.log("Informations de l'album récupérées : " + info.name);  
+
+    const playlist = new Playlist() 
+    playlist.title = info.name;
+    playlist.author = info.artists[0].name;
+    playlist.authorId = info.artists[0].id;
+    playlist.thumbnail = info.images[0].url;
+    playlist.url = info.external_urls.spotify;
+    playlist.id = albumId;
+    playlist.type = "spotify";
+    playlist.songs = info.tracks.items;
+
+    return playlist;
+
+    } catch (error) {
+       
+        clog.error("Impossible de récupérer les informations de l'album Spotify à partir de l'URL");
+        clog.error(error);
+        return null;
+    }
    
     
 }
 
 async function getPlaylist(url) {
     // Get the playlist and return a Playlist Object
-    const data = await spotifyApi.clientCredentialsGrant();
-    spotifyApi.setAccessToken(data.body['access_token']);
+
+    try {
+    const creditdata = await spotifyApi.clientCredentialsGrant();
+    spotifyApi.setAccessToken(creditdata.body['access_token']);
 
     const parts = url.split('/');
     const playlistId = parts[parts.indexOf('playlist') + 1].split('?')[0];
 
-    spotifyApi.getPlaylist(playlistId)
-    .then(function(data) {
+        const data = await spotifyApi.getPlaylist(playlistId)
+  
         const info = data.body;
+
+        if(!info) {
+            clog.error("Impossible de récupérer les informations de la playlist Spotify à partir de l'URL");
+            return null;
+        }
+
+        clog.log("Informations de la playlist récupérées : " + info.name);  
 
         const playlist = new Playlist() 
         playlist.title = info.name;
@@ -62,51 +112,68 @@ async function getPlaylist(url) {
         playlist.url = info.external_urls.spotify;
         playlist.id = playlistId;
         playlist.type = "spotify";
+       
+        for(const track of info.tracks.items) {
+            playlist.songs.push(track.track);
+        }
+
+        return playlist;
         
-        const tracks = info.tracks.items;
-        tracks.forEach(async function(track) {
-        
-            var trackName = track.track.name;
-            var artistName = track.track.artists[0].name;
-            var queryForYoutube =  `${trackName} - ${artistName}`;
+    } catch (error) {
+       
+        clog.error("Impossible de récupérer les informations de l'album Spotify à partir de l'URL");
+        clog.error(error);
+        return null;
+    }
+          
+}
 
-            var urlYoutubeFounded = await youtube.getQuery(queryForYoutube).then(function(songFind) {
-                if(!songFind) return null;
-                return songFind.url;
-            });
-            
-            clog.log("URL de la vidéo YouTube trouvée : " + urlYoutubeFounded);
+async function getTracks(playlist) {
 
-            if(!urlYoutubeFounded) {
-                clog.error("Impossible de récupérer l'URL de la vidéo YouTube à partir de la requête  " + queryForYoutube);
-               
-            } else {
-                const song = new Song();
-                song.title = track.track.name;
-                song.author = track.track.artists[0].name;
-                song.url = urlYoutubeFounded;
-                song.thumbnail = track.track.album.images[0].url;
-                song.id = track.track.id;
-                song.duration = track.track.duration_ms / 1000;
-                song.readduration = getReadableDuration(track.track.duration_ms);
+    const tracks = playlist.songs
+    playlistSongs = [];
+    for(const track of tracks) {
     
-                playlist.duration += track.track.duration_ms;
-    
-    
-                playlist.songs.push(song);
-            }
+        var trackName = track.name;
+        var artistName = track.artists[0].name;
+        var queryForYoutube =  `${trackName} - ${artistName}`;
 
-            
+        var urlYoutubeFounded = await youtube.getQuery(queryForYoutube).then(function(songFind) {
+            if(!songFind) return null;
+            return songFind.url;
         });
+        
+        clog.log("URL de la vidéo YouTube trouvée : " + urlYoutubeFounded);
+
+        if(!urlYoutubeFounded) {
+            clog.error("Impossible de récupérer l'URL de la vidéo YouTube à partir de la requête  " + queryForYoutube);
+        
+        } else {
+            const song = new Song();
+
+            song.title = track.name;
+            song.author = track.artists[0].name;
+            song.url = urlYoutubeFounded;
+            song.thumbnail = playlist.thumbnail;
+            song.id = track.id;
+            song.duration = track.duration_ms / 1000;
+            song.readduration = getReadableDuration(track.duration_ms / 1000);
+            song.type = "youtube";
+
+            playlist.duration += track.duration_ms / 1000;
+            playlistSongs.push(song);
+        }
+
+        // When finish do this
+
+    }
 
         playlist.readduration = getReadableDuration(playlist.duration);
+        playlist.songs = playlistSongs;
+
+
         return playlist;
-   
-    }, function(err) {
-        clog.error('Une erreur s\'est produite lors de la récupération de la playlist');
-        clog.error(err);
-    });
 }
 
 
-module.exports = {getSong, getAlbum, getPlaylist}
+module.exports = {getSong, getAlbum, getPlaylist, getTracks}

@@ -3,6 +3,7 @@ const { QueryType } = require('../utils/QueryType');
 const { Links } = require('../utils/Links');
 const youtube = require("../media/YoutubeInformation")
 const spotify = require("../media/SpotifyInformation")
+const soundcloud = require("../media/SoundcloudInformation")
 
 
 async function search(query) {
@@ -25,16 +26,18 @@ async function search(query) {
         
     }
     if(type == QueryType.SPOTIFY_ALBUM) {
-
+        return await spotify.getAlbum(query)
     }
     if(type == QueryType.SPOTIFY_PLAYLIST) {
         return await spotify.getPlaylist(query)
 
     }
     if(type == QueryType.SOUNDCLOUD_TRACK) {
+        return await soundcloud.getTrack(query)
 
     }
     if(type == QueryType.SOUNDCLOUD_PLAYLIST) {
+        return await soundcloud.getPlaylist(query)
         
     }
     // TODO: Add more providers

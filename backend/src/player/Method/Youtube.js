@@ -20,13 +20,13 @@ async function play(instance, song) {
           });
 
                     // Add compressor to the audio resource
-          song.resource = createAudioResource(stream);
+          var resource = createAudioResource(stream);
 
 
 
-          player.play(song.resource);
+          player.play(resource);
           instance.connection.subscribe(player);
-          clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - id : ${song.id}`) 
+          clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Youtube): ${song.title} - id : ${song.id}`) 
     
            } catch(e) {
                 clog.error("Erreur lors de la lecture de la musique : " + song.title)

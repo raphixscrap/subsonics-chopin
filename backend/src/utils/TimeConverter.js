@@ -29,4 +29,18 @@ function getReadableDuration(duration) {
     return max
 }
 
-module.exports = {getReadableDuration}
+function getSecondsDuration(duration) {
+   // Duration is in format hh:mm:ss and can be just m:ss or mm:ss
+    var durationArray = duration.split(":");
+    var seconds = 0;
+    if(durationArray.length == 3) {
+        seconds = parseInt(durationArray[0]) * 3600 + parseInt(durationArray[1]) * 60 + parseInt(durationArray[2]);
+    } else if(durationArray.length == 2) {
+        seconds = parseInt(durationArray[0]) * 60 + parseInt(durationArray[1]);
+    } else {
+        seconds = parseInt(durationArray[0]);
+    }
+    return seconds;
+}
+
+module.exports = {getReadableDuration, getSecondsDuration}

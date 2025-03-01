@@ -17,10 +17,10 @@ function getQueryType(url) {
     if(Links.regex.spotify.song.test(url)) return QueryType.SPOTIFY_SONG
     
     // Check if it's a Soundcloud link
- 
-    if(Links.regex.soundcloud.track.test(url)) return QueryType.SOUNDCLOUD_TRACK
-    if(Links.regex.soundcloud.playlist.test(url)) return QueryType.SOUNDCLOUD_PLAYLIST
     
+    if(Links.regex.soundcloud.playlist.test(url)) return QueryType.SOUNDCLOUD_PLAYLIST
+    if(Links.regex.soundcloud.track.test(url)) return QueryType.SOUNDCLOUD_TRACK
+   
 
 
     return QueryType.YOUTUBE_SEARCH

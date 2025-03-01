@@ -5,8 +5,12 @@ const { __glob } = require("../utils/GlobalVars")
 const { LogType } = require("loguix")
 const config = require("../utils/Database/Configuration")
 const metric = require("webmetrik") 
+const { Player } = require("../player/Player")
 
 const dlog = new LogType("Discord")
+
+const membersVoices = new Map()
+const timers = new Map()
 
 const client = new Client({
     intents:[GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMembers],
@@ -68,7 +72,42 @@ function init() {
         }
     })
 
-    // TODO: Implement the disconnect event for the bot
+    client.on("voiceStateUpdate", (oldMember, newMember) => {
+        membersVoices.set(newMember.id, {
+            guildId: newMember.guild.id,
+            channelId: newMember.channelId,
+        })
+
+        const player = new Player(newMember.guild.id)
+
+        if(player.connection && player.channelId) {
+            client.channels.fetch(player.channelId).then(channel => {
+
+                if(channel.members.size <= 1) {
+
+                    // If the player is alone in the channel, we will destroy it in 10 minutes
+                    // 10 minutes = 600000 ms
+                    // 10 second = 10000 ms
+                    timers.set(newMember.guild.id, setTimeout(() => {
+                        const getPlayer = new Player(newMember.guild.id)
+                        if(getPlayer.connection && player.channelId) {
+                            getPlayer.leave()
+                            dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " - Player supprimé : " + channel.name)
+                        }
+                 
+                    }, 10000))
+                    dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player supprimé dans 10 minutess : " + channel.name)
+                } else {
+                    dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player n'est pas seul dans le channel : " + channel.name)
+                    clearTimeout(timers.get(newMember.guild.id))
+                    timers.delete(newMember.guild.id)
+                }
+            })
+ 
+        }
+
+        
+    })
 
 
     

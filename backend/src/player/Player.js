@@ -7,7 +7,7 @@ const clog = new LogType("Signal")
 
 const media = require('./Method/Media');
 const youtube = require('./Method/Youtube');
-const Activity = require('../discord/Activity');
+const soundcloud = require('./Method/Soundcloud');
 
 const AllPlayers = new Map()
 
@@ -15,6 +15,7 @@ class Player {
     connection;
     player;
     guildId;
+    channelId;
     queue;
     constructor(guildId) {
         if(this.guildId === null) {
@@ -45,6 +46,8 @@ class Player {
             selfMute: false
         });
 
+        this.channelId = channel.id 
+
         this.player = createAudioPlayer()
         this.generatePlayerEvents()
     
@@ -61,6 +64,8 @@ class Player {
     }
 
     generatePlayerEvents() {
+
+        const Activity = require('../discord/Activity');
 
         this.player.on('error', error => {
             plog.error(`GUILD : ${this.guildId} - Une erreur est survenue dans le player`);
@@ -109,7 +114,9 @@ class Player {
        if(song.type == 'youtube') {
             youtube.play(this, song)
        }
-
+       if(song.type == "soundcloud") {
+            soundcloud.play(this, song)
+       }
 
        // TODO: Créer une méthode pour les autres types de médias
     }
@@ -151,6 +158,7 @@ class Player {
     }
 
     async leave() {
+        const Activity = require('../discord/Activity');
         if(this.checkConnection()) return
         if(this.queue.current != null) {
             this.queue.addPreviousSong(this.queue.current)
@@ -158,6 +166,9 @@ class Player {
         // Détruit la connection et le player et l'enlève de la liste des 
         this.connection.destroy()
         this.player.stop()
+        this.player = null
+        this.connection = null
+        this.channelId = null
         Activity.idleActivity()
         this.queue.destroy()
         AllPlayers.delete(this.guildId)

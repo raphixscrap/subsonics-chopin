@@ -2,8 +2,7 @@ const {LogType} = require('loguix')
 
 const clog = new LogType("Song")
 const MediaInformation = require('../media/MediaInformation')
-const YoutubeDuration = require('../utils/YoutubeDuration');
-const { getReadableDuration } = require('../utils/TimeConverter');
+const { getReadableDuration, getSecondsDuration } = require('../utils/TimeConverter');
 
 class Song {
     title = "Aucun titre";
@@ -15,7 +14,6 @@ class Song {
     duration;
     readduration;
     type;
-    resource;
 
     constructor(properties) {
         if(properties) {
@@ -50,20 +48,33 @@ class Song {
         
     }
 
-    async processYoutubeVideo(video) {
-        this.title = video.snippet.title
-        this.author = video.snippet.channelTitle
-        this.authorId = video.snippet.channelId
-        this.thumbnail = video.snippet.thumbnails.standard.url
-        this.url = `https://www.youtube.com/watch?v=${video.id}`
+    async processYoutubeVideo(video, playlist) {
+        if(playlist) {
+        this.title = video.title
+        this.author = video.author.name
+        this.authorId = video.author.channel_url
+        this.thumbnail = video.thumbnail_url
+        this.url = video.url
         this.type = "youtube"
         this.id = video.id
 
-        this.duration = await YoutubeDuration.getDurationVideo(video.id)
+        this.duration = video.milis_length / 1000
         this.readduration = getReadableDuration(this.duration)
+        } else { 
+            this.title = video.name
+            this.author = video.author.name
+            this.authorId = video.author.url
+            this.thumbnail = video.thumbnail
+            this.url = video.url
+            this.type = "youtube"
+            this.id = video.id
+
+            this.duration = getSecondsDuration(video.duration)
+            this.readduration = getReadableDuration(this.duration)
+        }
 
         return this
-    }
+    } 
     
 }
 
