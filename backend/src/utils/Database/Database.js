@@ -61,6 +61,9 @@ class Database {
             clog.error(`Erreur lors de la sauvegarde de la base de données '${this.name}'`)
             clog.error(e)
         }
+
+        // Assure that the database is up to date and reloaded
+        this.update()
         
     }
 

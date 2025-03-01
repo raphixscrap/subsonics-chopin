@@ -18,7 +18,7 @@ metric.publishMetrics("8001", "raphraph")
 
 setup();
 
-function setup() {
+async function setup() {
     const DiscordBot = require("./discord/Bot")
     DiscordBot.init()
 }

@@ -8,7 +8,8 @@ const __glob = {
     LOGS: root + path.sep + "logs",
     DATA: root + path.sep + "data",
     COMMANDS: root + path.sep + "src" + path.sep + "discord" + path.sep + "commands",
-    METRIC_FILE: root + path.sep + "data" + path.sep + "metrics.json"
+    METRIC_FILE: root + path.sep + "data" + path.sep + "metrics.json",
+    PREVIOUSFILE: root + path.sep + "data" + path.sep + "previous.json",
 }
 
 module.exports = {__glob}

@@ -81,9 +81,23 @@ class Embed {
         return this.embed
     }
 
-    send(interaction) {
-        interaction.reply({embeds: [this.build()]})
+    send(interaction, ephemeral) {
+        if(ephemeral) {
+            interaction.reply({embeds: [this.build()], ephemeral: true})
+        } else {
+            interaction.reply({embeds: [this.build()]})
+        }
     }
 }
 
-module.exports = {Embed}
+class EmbedError extends Embed {
+    constructor(message) {
+        super()
+        this.setColor(150, 20, 20)
+        this.setTitle('Erreur')
+        this.setThumbnail("https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Dialog-error-round.svg/2048px-Dialog-error-round.svg.png")
+        this.setDescription(message)
+    }
+}
+
+module.exports = {Embed, EmbedError}
