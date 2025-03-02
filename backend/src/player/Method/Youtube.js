@@ -22,7 +22,7 @@ async function play(instance, song) {
                     // Add compressor to the audio resource
           var resource = createAudioResource(stream);
 
-
+          instance.setCurrentResource(resource)
 
           player.play(resource);
           instance.connection.subscribe(player);

@@ -13,6 +13,8 @@ async function play(instance, song) {
                     inputType: StreamType.Arbitrary
                }) // Remplace par ton fichier audio
 
+               
+            instance.setCurrentResource(resource)
             player.play(resource);
             instance.connection.subscribe(player);
             clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - id : ${song.id}`) 

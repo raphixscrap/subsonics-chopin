@@ -15,7 +15,7 @@ async function play(instance, song) {
 
             const stream = await soundcloud.util.streamTrack(song.url)
             var resource = await createAudioResource(stream)
-
+            instance.setCurrentResource(resource)
             player.play(resource);
             instance.connection.subscribe(player);
             clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Soundcloud): ${song.title} - id : ${song.id}`) 

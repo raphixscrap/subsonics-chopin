@@ -17,6 +17,7 @@ class Player {
     guildId;
     channelId;
     queue;
+    currentResource;
     constructor(guildId) {
         if(this.guildId === null) {
             clog.error("Impossible de créer un Player, car guildId est null")
@@ -175,6 +176,23 @@ class Player {
         clog.log("Connection détruite avec le guildId : " + this.guildId)
         plog.log("Player détruit avec le guildId : " + this.guildId)
         
+    }
+
+    setDuration(duration) {
+        if(this.checkConnection()) return
+        if(this.queue.current == null) return
+        if(this.currentResource == null) return
+        var maxduration = this.queue.current.duration 
+        if(duration > maxduration) return
+        this.player.stop(); // Arrête la lecture actuelle
+        this.player.play(this.currentResource, {
+            startTime: duration * 1000 // Convertit le timecode en millisecondes
+        });
+
+    }
+
+    setCurrentResource(value) {
+        this.currentResource = value;
     }
 
     async skip() {
