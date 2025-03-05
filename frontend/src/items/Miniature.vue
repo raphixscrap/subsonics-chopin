@@ -4,7 +4,7 @@ import Add from "../assets/Icons/Add.vue";
 import Play from "../assets/Icons/Play.vue";
 
 const props = defineProps<{
-  imgSrc: string;
+  thumbnail: string;
   title: string;
   name: string;
 }>();
@@ -13,7 +13,7 @@ const props = defineProps<{
 <template>
   <div class="miniature">
     <div class="miniature__img">
-      <img :src="props.imgSrc" alt="Video Thumbnail" />
+      <img :src="props.thumbnail" alt="Video Thumbnail" />
       <div class="miniature__img__overlay">
         <button>
           <Add />

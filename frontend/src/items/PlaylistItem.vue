@@ -5,9 +5,10 @@ import YoutubePlaylist from "../assets/Icons/YoutubePlaylist.vue";
 import Trash from "../assets/Icons/Trash.vue";
 import Add from "../assets/Icons/Add.vue";
 import Play from "../assets/Icons/Play.vue";
+import DefaultPlaylist from "../assets/Icons/DefaultPlaylist.vue";
 
 const props = defineProps<{
-  imgSrc: 'youtube';
+  imgSrc: string;
   title: string;
 }>();
 
@@ -38,6 +39,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="play-list">
     <YoutubePlaylist v-if="imgSrc == 'youtube'" />
+    <DefaultPlaylist v-else />
     <div class="play-list__info">
       <p class="play-list__info__title" :title="props.title">{{ props.title }}</p>
     </div>
@@ -80,6 +82,7 @@ onBeforeUnmount(() => {
     gap: 10px;
     flex: 1 1 auto;
     min-width: 0;
+    width: 100%;
 
     &__title {
       overflow: hidden;

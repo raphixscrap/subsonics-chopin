@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { defineProps } from 'vue';
 import PlaylistItem from "../items/PlaylistItem.vue";
+import {playlistsListStore} from "../stores/dataStore.ts";
 
 const props = defineProps({
   popup: {
@@ -8,49 +9,17 @@ const props = defineProps({
     default: true
   }
 });
+
+const playlists = playlistsListStore();
 </script>
 <template>
   <div :class="props.popup == true ? 'playlist--popup' : 'playlist'">
     <div class="playlist__content">
       <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
-      />
-      <PlaylistItem
-          title="Le japon sa bouge vraiment beaucoup"
-          img-src="youtube"
+          v-for="playlist in playlists.playlists"
+          :key="playlist.name"
+          :title="playlist.name"
+          :imgSrc="playlist.origin"
       />
     </div>
   </div>
@@ -82,7 +51,6 @@ const props = defineProps({
   &__content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
     width: 100%;
     height: 100%;
     padding: 30px;

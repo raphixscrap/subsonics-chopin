@@ -1,16 +1,5 @@
 import { defineStore } from 'pinia';
 
-export const useSearchStore = defineStore('search', {
-    state: () => ({
-        searchQuery: ''
-    }),
-    actions: {
-        updateSearch(query: string) {
-            this.searchQuery = query;
-        }
-    }
-});
-
 export const playlistsIsOpen = defineStore('playlistsIsOpen', {
     state: () => ({
         isOpen: false

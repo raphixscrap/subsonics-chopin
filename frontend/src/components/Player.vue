@@ -8,6 +8,14 @@ import LeaveIcon from "../assets/Icons/LeaveIcon.vue";
 import PrevIcon from "../assets/Icons/PrevIcon.vue";
 import NextIcon from "../assets/Icons/NextIcon.vue";
 import PlayIcon from "../assets/Icons/PlayIcon.vue";
+import PauseIcon from "../assets/Icons/PauseIcon.vue";
+import {ref} from "vue";
+
+const isPlaying = ref(true);
+
+function togglePlay() {
+  isPlaying.value = !isPlaying.value;
+}
 </script>
 
 <template>
@@ -22,7 +30,13 @@ import PlayIcon from "../assets/Icons/PlayIcon.vue";
     </div>
     <div class="player__controls">
       <button><PrevIcon /></button>
-      <button class="play_button"><PlayIcon /></button>
+      <button
+          class="play_button"
+          @click="togglePlay"
+      >
+        <PlayIcon v-if="isPlaying"/>
+        <PauseIcon v-else />
+      </button>
       <button><NextIcon /></button>
     </div>
     <div class="player__actions">

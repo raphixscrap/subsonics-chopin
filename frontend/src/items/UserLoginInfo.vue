@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import UserIcon from "../assets/Icons/UserIcon.vue";
+import {userOnlineStore} from "../stores/dataStore.ts";
 
-const userLoginInfo = 2;
+const userLoginInfo = userOnlineStore();
 </script>
 
 <template>
   <div class="user-login-info">
     <UserIcon />
-    <p class="sub-text">{{ userLoginInfo }}</p>
+    <p class="sub-text">{{ userLoginInfo.nbUser }}</p>
   </div>
 </template>
 
