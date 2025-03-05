@@ -2,6 +2,7 @@
 
 import MiniatureList from "../items/MiniatureList.vue";
 import {defineProps} from "vue";
+import {lectureListStore} from "../stores/dataStore.ts";
 
 const props = defineProps({
   popup: {
@@ -9,65 +10,18 @@ const props = defineProps({
     default: true
   }
 });
+
+const lecturesList = lectureListStore();
 </script>
 
 <template>
   <div :class="props.popup == true ? 'lecture-list--popup' : 'lecture-list'">
     <div class="lecture-list__content">
       <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <MiniatureList
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
+          v-for="lecture in lecturesList.lectures"
+          :thumbnail="lecture.thumbnail"
+          :title="lecture.title"
+          :name="lecture.name"
       />
     </div>
   </div>

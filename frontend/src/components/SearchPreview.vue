@@ -1,50 +1,20 @@
 <script setup lang="ts">
 
 import Miniature from "../items/Miniature.vue";
+import {searchStore} from "../stores/dataStore.ts";
+
+const search = searchStore();
 </script>
 
 <template>
   <div class="search-preview">
     <div class="search-preview__content">
       <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
-      />
-      <Miniature
-          imgSrc="https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg"
-          title="lofi hip hop mix 📚 beats to relax/study to (Part 1)"
-          name="LofiGirl"
+          v-for="video in search.videos"
+          :key="video.title"
+          :thumbnail="video.thumbnail"
+          :title="video.title"
+          :name="video.name"
       />
     </div>
   </div>
@@ -65,7 +35,6 @@ import Miniature from "../items/Miniature.vue";
     grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
     gap: 20px;
     width: 100%;
-    height: 100%;
     padding: 30px;
     box-sizing: border-box;
     overflow: scroll;

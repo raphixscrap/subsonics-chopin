@@ -3,11 +3,12 @@ import Header from "../components/Header.vue";
 import InfoHeader from "../components/InfoHeader.vue";
 import Player from "../components/Player.vue";
 import SearchPreview from "../components/SearchPreview.vue";
-import { useSearchStore, lectureListIsOpen, playlistsIsOpen } from "../stores/globalStore.ts";
+import { lectureListIsOpen, playlistsIsOpen } from "../stores/globalStore.ts";
 import Playlist from "../components/Playlist.vue";
 import LectureList from "../components/LectureList.vue";
+import {searchStore} from "../stores/dataStore.ts";
 
-const searchStore = useSearchStore();
+const search = searchStore();
 const lectureList = lectureListIsOpen();
 const playlists = playlistsIsOpen();
 </script>
@@ -17,7 +18,7 @@ const playlists = playlistsIsOpen();
   <InfoHeader />
   <div class="content">
   <Transition name="slide-up">
-    <component :is="searchStore.searchQuery == '' ? Player : SearchPreview" />
+    <component :is="search.searchQuery == '' ? Player : SearchPreview" />
   </Transition>
   </div>
 

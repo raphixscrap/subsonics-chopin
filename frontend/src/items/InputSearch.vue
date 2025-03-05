@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {lectureListIsOpen, playlistsIsOpen, useSearchStore} from '../stores/globalStore.ts'
+import {lectureListIsOpen, playlistsIsOpen} from '../stores/globalStore.ts'
+import {searchStore} from '../stores/dataStore.ts'
 import SearchIcon from "../assets/Icons/SearchIcon.vue";
 
-const searchStore = useSearchStore();
+const search = searchStore();
 
 const lectureList = lectureListIsOpen();
 const playlists = playlistsIsOpen();
@@ -10,7 +11,7 @@ const playlists = playlistsIsOpen();
 const updateSearch = (event: Event) => {
   lectureList.closeLectureList();
   playlists.closePlaylists();
-  searchStore.updateSearch((event.target as HTMLInputElement).value);
+  search.updateSearch((event.target as HTMLInputElement).value);
 };
 </script>
 

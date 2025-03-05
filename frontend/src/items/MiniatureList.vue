@@ -7,7 +7,7 @@ import Add from "../assets/Icons/Add.vue";
 import Top from "../assets/Icons/Top.vue";
 
 const props = defineProps<{
-  imgSrc: string;
+  thumbnail: string;
   title: string;
   name: string;
 }>();
@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="miniature-list">
     <div class="miniature-list__img">
-      <img :src="props.imgSrc" alt="Video Thumbnail"/>
+      <img :src="props.thumbnail" alt="Video Thumbnail"/>
     </div>
     <div class="miniature-list__info">
       <p class="miniature-list__info__title" :title="props.title">{{ props.title }}</p>
