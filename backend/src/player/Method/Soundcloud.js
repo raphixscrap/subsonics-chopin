@@ -1,31 +1,25 @@
 const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType} = require('@discordjs/voice');
 const {LogType} = require('loguix')
-const clog = new LogType("Soundcloud")
-const plog = require("loguix").getInstance("Player")
+const clog = new LogType("Soundcloud-Stream")
 const {Soundcloud} = require('soundcloud.ts')
+const ffmpeg = require('fluent-ffmpeg')
 
 const soundcloud = new Soundcloud();
 
-async function play(instance, song) {
+async function getStream(song) {
        try {
           
-            instance.player = createAudioPlayer()
-            instance.generatePlayerEvents()
-            const player = instance.player
-
-            const stream = await soundcloud.util.streamTrack(song.url)
-            var resource = await createAudioResource(stream)
-            instance.setCurrentResource(resource)
-            player.play(resource);
-            instance.connection.subscribe(player);
-            clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Soundcloud): ${song.title} - id : ${song.id}`) 
+          var stream = await soundcloud.util.streamTrack(song.url)
+           return stream
+            
+               
 
        } catch(e) {
-            clog.error("Erreur lors de la lecture de la musique : " + song.title)
+            clog.error("Erreur lors de la récupération du stream : " + song.title)
             clog.error(e)
        }
     
 
 }
 
-module.exports = {play}
+module.exports = {getStream}

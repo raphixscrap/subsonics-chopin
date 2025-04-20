@@ -11,6 +11,7 @@ const dlog = new LogType("Discord")
 
 const membersVoices = new Map()
 const timers = new Map()
+const guilds = new Map()
 
 const client = new Client({
     intents:[GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMembers],
@@ -22,11 +23,31 @@ function getClient() {
     return client
 }
 
+function getGuilds() {
+    return guilds
+}
+
+function getMembersVoices() {
+    return membersVoices
+}
+
+function getChannel(guildId, channelId) {
+    return client.guilds.cache.get(guildId).channels.cache.get(channelId)
+}
 
 function init() {
         
     client.once('ready', () => {
         dlog.log("Connexion au Bot Discord réussi ! Connecté en tant que : " + client.user.tag)
+
+        // Add all guilds to the guilds map
+        client.guilds.cache.forEach(guild => {
+            guilds.set(guild.id, {
+                id: guild.id,
+                name: guild.name,
+                members: guild.members.cache.map(member => member.user.username),
+            })
+        })
 
         const Activity = require("./Activity")
         Activity.idleActivity()
@@ -72,6 +93,16 @@ function init() {
         }
     })
 
+   // If a new guild is added, we will add it to the guilds map
+    client.on("guildCreate", (guild) => {
+        dlog.log("Nouvelle guilde ajoutée : " + guild.name)
+        guilds.set(guild.id, {
+            id: guild.id,
+            name: guild.name,
+            members: guild.members.cache.map(member => member.user.username),
+        })
+    })
+
     client.on("voiceStateUpdate", (oldMember, newMember) => {
         membersVoices.set(newMember.id, {
             guildId: newMember.guild.id,
@@ -84,7 +115,7 @@ function init() {
             client.channels.fetch(player.channelId).then(channel => {
 
                 if(channel.members.size <= 1) {
-
+                    
                     // If the player is alone in the channel, we will destroy it in 10 minutes
                     // 10 minutes = 600000 ms
                     // 10 second = 10000 ms
@@ -95,7 +126,7 @@ function init() {
                             dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " - Player supprimé : " + channel.name)
                         }
                  
-                    }, 10000))
+                    }, 600000))
                     dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player supprimé dans 10 minutess : " + channel.name)
                 } else {
                     dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player n'est pas seul dans le channel : " + channel.name)
@@ -115,6 +146,6 @@ function init() {
     client.login(config.getToken())
 }
 
-module.exports = {init, getClient}
+module.exports = {init, getClient, getGuilds, getMembersVoices, getChannel}
 
 

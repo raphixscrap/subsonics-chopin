@@ -1,6 +1,9 @@
-const { joinVoiceChannel, getVoiceConnection, entersState, VoiceConnectionStatus, createAudioPlayer, AudioPlayerStatus } = require('@discordjs/voice');
+const { joinVoiceChannel, getVoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayerStatus, StreamType, createAudioResource } = require('@discordjs/voice');
 const {List} = require('./List')
 const {LogType} = require("loguix");
+const ffmpeg = require('fluent-ffmpeg')
+const fs = require('fs')
+const { PassThrough } = require('stream');
 
 const plog = new LogType("Player")
 const clog = new LogType("Signal")
@@ -13,11 +16,13 @@ const AllPlayers = new Map()
 
 class Player {
     connection;
+    connected = false;
     player;
     guildId;
     channelId;
     queue;
     currentResource;
+    loop = false;
     constructor(guildId) {
         if(this.guildId === null) {
             clog.error("Impossible de créer un Player, car guildId est null")
@@ -39,6 +44,20 @@ class Player {
             clog.log(`GUILD : ${this.guildId} - Une connexion existe déjà pour ce serveur`)
             return
         }
+        
+        this.joinChannel(channel)
+
+        this.player = createAudioPlayer()
+        this.generatePlayerEvents()
+
+    }
+
+    isConnected() {
+        return this.connected
+    }
+
+    joinChannel(channel) {
+        this.channelId = channel.id 
         this.connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
@@ -47,11 +66,6 @@ class Player {
             selfMute: false
         });
 
-        this.channelId = channel.id 
-
-        this.player = createAudioPlayer()
-        this.generatePlayerEvents()
-    
         this.connection.on('stateChange', (oldState, newState) => {
             clog.log(`GUILD : ${this.guildId} - [STATE] OLD : "${oldState.status}" NEW : "${newState.status}"`);
 
@@ -61,7 +75,8 @@ class Player {
                 this.leave()
             }
         });
-
+        this.connected = true
+        process.emit("PLAYERS_UPDATE")
     }
 
     generatePlayerEvents() {
@@ -71,20 +86,30 @@ class Player {
         this.player.on('error', error => {
             plog.error(`GUILD : ${this.guildId} - Une erreur est survenue dans le player`);
             plog.error(error);
+            console.error(error);
+            process.emit("PLAYERS_UPDATE")
         });
         
        this.player.on(AudioPlayerStatus.Idle, () => {
+            // Si la musique est en boucle, on relance la musique
+            if(this.loop) {
+                this.play(this.queue.current)
+                return
+            }
+            // Si la musique n'est pas en boucle, on passe à la musique suivante
             Activity.idleActivity()
             this.queue.setCurrent(null)
             if(this.queue.next.length > 0) {
                 this.play(this.queue.nextSong())
             } 
+            process.emit("PLAYERS_UPDATE")
         });
 
         this.player.on(AudioPlayerStatus.Playing, () => {
         
             plog.log(`GUILD : ${this.guildId} - Le player est en train de jouer le contenu suivant : ${this.queue.current.title}`);
             Activity.setMusicActivity(this.queue.current.title, this.queue.current.author, this.queue.current.thumbnail)
+            process.emit("PLAYERS_UPDATE")
             
         });
     }
@@ -101,6 +126,45 @@ class Player {
         }
     }
 
+    getState() {
+        const state = {
+            current: this.queue.current,
+            next: this.queue.next,
+            previous: this.queue.previous,
+            loop: this.loop,
+            shuffle: this.queue.shuffle,
+            paused: this.player.state.status == AudioPlayerStatus.Paused,
+            playing: this.player.state.status == AudioPlayerStatus.Playing,
+            duration: this.getDuration(),
+            playerState: this.player.state.status,
+            connectionState: this.connection.state.status,
+            channelId: this.channelId
+        }
+        return state
+    }
+
+    async setLoop() {
+        if(this.checkConnection()) return
+        this.loop = !this.loop
+        if(this.loop) {
+            plog.log(`GUILD : ${this.guildId} - La musique est en boucle`)
+        } else {
+            plog.log(`GUILD : ${this.guildId} - La musique n'est plus en boucle`)
+        }
+        process.emit("PLAYERS_UPDATE")
+    }
+
+    async setShuffle() {
+        if(this.checkConnection()) return
+        this.queue.shuffle = !this.queue.shuffle
+        if(this.queue.shuffle) {
+            plog.log(`GUILD : ${this.guildId} - La musique est en mode aléatoire`)
+        } else {
+            plog.log(`GUILD : ${this.guildId} - La musique n'est plus en mode aléatoire`)
+        }
+        process.emit("PLAYERS_UPDATE")
+    }
+
     async play(song) {
         if(this.checkConnection()) return
         if(this.queue.current != null) {
@@ -108,18 +172,31 @@ class Player {
         }
 
         this.queue.setCurrent(song)
+        this.stream = await this.getStream(song)
 
-       if(song.type == "attachment") {
-            media.play(this, song)
-       }
-       if(song.type == 'youtube') {
-            youtube.play(this, song)
-       }
-       if(song.type == "soundcloud") {
-            soundcloud.play(this, song)
-       }
+        if(this.stream === null) {
+            plog.error(`GUILD : ${this.guildId} - Impossible de lire la musique : ${song.title} avec le type : ${song.type}`)
+            return
+        }
 
-       // TODO: Créer une méthode pour les autres types de médias
+        this.playStream(this.stream)
+
+        plog.log(`GUILD : ${this.guildId} - Lecture de la musique : ${song.title} - Type : ${song.type}`)   
+    }
+
+    async getStream(song) {
+        let stream = null
+        if(song.type == "attachment") {
+            stream = await media.getStream(song)
+        }
+        if(song.type == 'youtube') {
+            stream = await youtube.getStream(song)
+        }
+        if(song.type == "soundcloud") {
+            stream = await soundcloud.getStream(song)
+        }
+
+        return stream
     }
 
     async add(song) {
@@ -156,6 +233,7 @@ class Player {
             plog.log(`GUILD : ${this.guildId} - La musique a été mise en pause`)
             return true
         }
+        process.emit("PLAYERS_UPDATE")
     }
 
     async leave() {
@@ -170,29 +248,101 @@ class Player {
         this.player = null
         this.connection = null
         this.channelId = null
+        this.connected = false
         Activity.idleActivity()
         this.queue.destroy()
         AllPlayers.delete(this.guildId)
         clog.log("Connection détruite avec le guildId : " + this.guildId)
         plog.log("Player détruit avec le guildId : " + this.guildId)
+        process.emit("PLAYERS_UPDATE")
+    }
+
+    async setDuration(duration) {
+
+        if (this.checkConnection()) return;
+        if (this.queue.current == null) return;
+        if (this.currentResource == null) return;
+    
+        const maxDuration = this.queue.current.duration;
+        if (duration > maxDuration) {
+            plog.error(`GUILD : ${this.guildId} - La durée demandée dépasse la durée maximale de la musique.`);
+            return;
+        }
+
+        this.stream = await this.getStream(this.queue.current);
+        if (this.stream === null) {
+            plog.error(`GUILD : ${this.guildId} - Impossible de lire la musique : ${this.queue.current.title} avec le type : ${this.queue.current.type}`);
+            return;
+        }
+
+        // Si stream est un lien, ouvrir le stream à partir du lien
+
+        if(typeof this.stream === "string") {  
+            this.stream = fs.createReadStream(this.stream)
+        }
+
+        const passThroughStream = new PassThrough();
+        ffmpeg(this.stream)
+            .setStartTime(duration) // Démarrer à la position demandée (en secondes)
+            .outputOptions('-f', 'mp3') // Specify output format if needed
+            .on('error', (err) => {
+                plog.error(`GUILD : ${this.guildId} - Une erreur est survenue avec ffmpeg : ${err.message}`);
+            })
+            .pipe(passThroughStream, { end: true });
+
+        this.stream = passThroughStream;
+
+        this.playStream(this.stream); // Jouer le nouveau flux
+
+        this.currentResource.playbackDuration = duration * 1000; // Mettre à jour la durée de lecture du resource
+    
+        plog.log(`GUILD : ${this.guildId} - Lecture déplacée à ${duration}s.`);
         
     }
 
-    setDuration(duration) {
+    playStream(stream) {
+        if(this.checkConnection()) return
+        if(this.player !== null) this.player.stop();
+
+        this.player = createAudioPlayer()
+        this.generatePlayerEvents()
+        
+        const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
+
+        this.setCurrentResource(resource)
+        this.player.play(resource);
+        this.connection.subscribe(this.player);
+        process.emit("PLAYERS_UPDATE")
+    }
+
+    getDuration() {
+       // Return the duration of player
+
         if(this.checkConnection()) return
         if(this.queue.current == null) return
         if(this.currentResource == null) return
-        var maxduration = this.queue.current.duration 
-        if(duration > maxduration) return
-        this.player.stop(); // Arrête la lecture actuelle
-        this.player.play(this.currentResource, {
-            startTime: duration * 1000 // Convertit le timecode en millisecondes
-        });
+        return this.currentResource.playbackDuration / 1000
 
     }
 
     setCurrentResource(value) {
         this.currentResource = value;
+    }
+
+    changeChannel(channel) {
+        if(this.checkConnection()) return
+        if(this.connection === null) return
+        if(this.connection.channelId === channel.id) return
+
+        this.connection.destroy()
+        this.joinChannel(channel)
+
+        // Si la musique est en cours de lecture, on la relance avec le bon timecode
+
+        if(this.player) {
+            this.connection.subscribe(this.player);
+        }
+        process.emit("PLAYERS_UPDATE")
     }
 
     async skip() {
@@ -203,6 +353,7 @@ class Player {
         }
         const songSkip = this.queue.nextSong()
         this.play(songSkip)
+        process.emit("PLAYERS_UPDATE")
         return songSkip
     }
 
@@ -215,11 +366,37 @@ class Player {
        
         const songPrevious = this.queue.previousSong()
         this.play(songPrevious)
+        process.emit("PLAYERS_UPDATE")
         return songPrevious
     }
 }
 
-module.exports = {Player, AllPlayers}
+/**
+ * 
+ * @param {string} guildId 
+ * @returns {Player} player
+ */
+function getPlayer(guildId) {
+    if(AllPlayers.has(guildId)) {
+        return AllPlayers.get(guildId)
+    } else {
+        return new Player(guildId)
+    }
+}
+
+function getAllPlayers() {
+    const players = new Array()
+    AllPlayers.forEach((player) => {
+        players.push(player)
+    })
+}
+
+function isPlayer(guildId) {
+    return AllPlayers.has(guildId)
+}
+
+
+module.exports = {Player, AllPlayers, getPlayer, isPlayer, getAllPlayers}
 
 
 /*

@@ -1,7 +1,7 @@
 const {LogType} = require('loguix');
 const clog = new LogType("SoundcloudInformation");
 const {Song} = require('../player/Song');
-const {Playlist} = require('../player/Playlist');
+const {Playlist} = require('../playlists/Playlist');
 const {Soundcloud} = require('soundcloud.ts')
 const {getReadableDuration} = require('../utils/TimeConverter');
 

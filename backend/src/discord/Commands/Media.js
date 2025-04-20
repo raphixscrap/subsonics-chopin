@@ -43,7 +43,6 @@ const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal
     embed.send(interaction)
     
 
-
 }, [{type: "FILE", name: "media", description: "Fichier audio à lire", required: true},
     {type:"BOOLEAN", name: "now", description: "Lire le média maintenant", required: false}]
 )

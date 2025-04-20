@@ -4,7 +4,6 @@ const { Player, AllPlayers } = require("../../player/Player")
 
 const command = new Command("previous", "Passe à la musique précédente", (client, interaction) => {
 
-
     if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour passer à la musique suivante !").send(interaction)
 
     const channel = interaction.member.voice.channel

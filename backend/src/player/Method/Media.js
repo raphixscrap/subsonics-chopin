@@ -2,22 +2,13 @@ const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType
 const {LogType} = require('loguix')
 const clog = new LogType("Media")
 const plog = require("loguix").getInstance("Player")
+const ffmpeg = require('fluent-ffmpeg') 
 
-async function play(instance, song) {
+async function getStream(song) {
        try {
           
-            instance.player = createAudioPlayer()
-            instance.generatePlayerEvents()
-            const player = instance.player
-            var resource = await createAudioResource(song.url, {
-                    inputType: StreamType.Arbitrary
-               }) // Remplace par ton fichier audio
-
-               
-            instance.setCurrentResource(resource)
-            player.play(resource);
-            instance.connection.subscribe(player);
-            clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Media): ${song.title} - id : ${song.id}`) 
+        return song.url;
+           
 
        } catch(e) {
             clog.error("Erreur lors de la lecture de la musique : " + song.title)
@@ -27,4 +18,4 @@ async function play(instance, song) {
 
 }
 
-module.exports = {play}
+module.exports = {getStream}

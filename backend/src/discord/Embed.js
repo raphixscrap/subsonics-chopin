@@ -1,10 +1,12 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder } = require("discord.js");
 
 class Embed {
     fields;
+    buttons;
     constructor() {
         this.embed = new EmbedBuilder().setTimestamp()
         this.fields = []
+        this.buttons = []
     }
 
     setTitle(title) {
@@ -75,18 +77,24 @@ class Embed {
         return this
     }
 
+    addButton(button) {
+        this.buttons.push(button)
+        return this
+    }   
+
     build() {
         //Add Fields to an object 
         this.embed.addFields(this.fields)
+        if(this.buttons.length > 0) {
+            this.actionRow = new ActionRowBuilder()
+			.addComponents(this.buttons);
+        }
         return this.embed
     }
 
     send(interaction, ephemeral) {
-        if(ephemeral) {
-            interaction.reply({embeds: [this.build()], ephemeral: true})
-        } else {
-            interaction.reply({embeds: [this.build()]})
-        }
+        if(ephemeral === undefined) ephemeral = false;
+        interaction.reply({ embeds: [this.build()], ephemeral: ephemeral, components: this.buttons.length > 0 ? [this.actionRow] : [] })
     }
 }
 

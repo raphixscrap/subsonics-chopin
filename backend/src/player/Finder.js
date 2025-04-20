@@ -6,12 +6,11 @@ const spotify = require("../media/SpotifyInformation")
 const soundcloud = require("../media/SoundcloudInformation")
 
 
-async function search(query) {
+async function search(query, multiple) {
     const type = Resolver.getQueryType(query)
     if(type == QueryType.YOUTUBE_SEARCH) {
-
-        return await youtube.getQuery(query)
-      
+        return await youtube.getQuery(query, multiple)
+       
     }
     if(type == QueryType.YOUTUBE_VIDEO) {
     

@@ -2,11 +2,13 @@ const {Database} = require("./Database")
 const {__glob} = require("../GlobalVars")
 const {LogType} = require("loguix")
 const path = require("path")
+const { get } = require("http")
 
 const clog = new LogType("Configuration")
 
 const config = new Database("config", __glob.DATA  + path.sep + "config.json", {
     token: "",
+    client_secret: "",
     report: {
         channel : "",
         contact : ""
@@ -17,7 +19,9 @@ const config = new Database("config", __glob.DATA  + path.sep + "config.json", {
             clientId: "",
             clientSecret: ""
         }
-    }
+    },
+    website: "",
+    server_port: 5000,
 })
 
 function getToken() {
@@ -45,9 +49,21 @@ function getSpotifyClientSecret() {
     return config.data.api.spotify.clientSecret
 }
 
+function getWebsiteLink() {
+    return config.data.website
+}
+
+function getPort() {
+    return config.data.server_port
+}
+
+function getClientSecret() {
+    return config.data.client_secret
+}
+
 if(getToken() == "") {
     clog.error("Impossible de démarrer sans token valide")
     process.exit(1)
 }
 
-module.exports = {getToken, getReportChannel, getReportContact, getYoutubeApiKey, getSpotifyClientId, getSpotifyClientSecret}
+module.exports = {getToken, getClientSecret, getReportChannel, getReportContact, getYoutubeApiKey, getSpotifyClientId, getSpotifyClientSecret, getWebsiteLink, getPort}

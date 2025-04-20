@@ -34,7 +34,7 @@ const command = new Command("pause", "Mettre en pause / Reprendre la musique en 
 
         embed.send(interaction)
     })
-
+    
     // Réponse en embed
 
     

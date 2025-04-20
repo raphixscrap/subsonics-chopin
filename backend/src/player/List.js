@@ -41,6 +41,7 @@ class List {
         } else {
             return null;
         }
+        
     }
 
     nextSong() {
@@ -58,30 +59,36 @@ class List {
            
         }
         this.setCurrent(song)
+        process.emit("PLAYERS_UPDATE")
         return song
     }
 
 
     clearNext() {
         this.next = new Array();
+        process.emit("PLAYERS_UPDATE")
     }
 
     addNextSong(song) {
         this.next.push(song)
+        process.emit("PLAYERS_UPDATE")
     }
 
     firstNext(song) {
         this.next.unshift(song)
+        process.emit("PLAYERS_UPDATE")
     }
 
     removeNextByIndex(index) {
         this.next.splice(index, 1)
+        process.emit("PLAYERS_UPDATE")
     }
 
     moveSongToUpNext(index) {
         const song = this.next[index]
         this.next.splice(index, 1)
         this.next.unshift(song)
+        process.emit("PLAYERS_UPDATE")
     }
 
     getPrevious() {
@@ -100,6 +107,7 @@ class List {
         } else {
             return null;
         }
+       
     }
 
     previousSong() {
@@ -115,21 +123,25 @@ class List {
         } else {
             return null;
         }
+      
     }
 
     clearPrevious() {
         PreviousDB.data[this.guildId] = new Array();
         savePrevious();
+        process.emit("PLAYERS_UPDATE")
     }
 
     addPreviousSongToNextByIndex(index) {
         const song = PreviousDB.data[this.guildId][index]
         this.next.push(song)
+        process.emit("PLAYERS_UPDATE")
     }
 
     addPreviousSong(song) {
         PreviousDB.data[this.guildId].unshift(song)
         savePrevious()
+        process.emit("PLAYERS_UPDATE")
     }
 
     getCurrent() {
@@ -138,6 +150,7 @@ class List {
 
     setCurrent(value) {
         this.current = value;
+        process.emit("PLAYERS_UPDATE")
     }
 
     destroy() {
@@ -145,11 +158,11 @@ class List {
         this.current = null
         this.shuffle = false;
         AllLists.delete(this.guildId)
-       
+        process.emit("PLAYERS_UPDATE")
     }
 
-    setShuffle(value) {
-        this.shuffle = value;
+    setShuffle() {
+        this.shuffle = !this.shuffle;
     }
 
     isShuffle() {
@@ -175,6 +188,7 @@ class List {
             return song
 
         }
+        process.emit("PLAYERS_UPDATE")
     }
 
     addNextPlaylist(playlist, firstAlreadyPlayed) {
@@ -185,10 +199,17 @@ class List {
         for(const song of playlist.songs) {
             this.addNextSong(song)
         }
+        process.emit("PLAYERS_UPDATE")
         
     }
 
-    
+    moveNext(fromIndex, toIndex) {
+        if(fromIndex == toIndex) return;
+        const song = this.next[fromIndex]
+        this.next.splice(fromIndex, 1)
+        this.next.splice(toIndex, 0, song)
+        process.emit("PLAYERS_UPDATE")
+    }
 
 
 }

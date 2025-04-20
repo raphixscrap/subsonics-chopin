@@ -1,37 +1,30 @@
 const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType} = require('@discordjs/voice');
 const {LogType} = require('loguix')
-const clog = new LogType("Youtube")
-const plog = require("loguix").getInstance("Player")
+const clog = new LogType("Youtube-Stream")
 const ytdl = require('@distube/ytdl-core')
+const ffmpeg = require('fluent-ffmpeg')
+const { getRandomIPv6 } = require("@distube/ytdl-core/lib/utils");
 
-async function play(instance, song) {
+async function getStream(song) {
        try {
-              
-          instance.player = createAudioPlayer()
-          instance.generatePlayerEvents()
-          const player = instance.player
-          const stream = ytdl(song.url, { 
+         
+          let stream = ytdl(song.url, { 
                quality: 'highestaudio',
                highWaterMark: 1 << 30,
                liveBuffer: 20000,
                dlChunkSize: 0,
                bitrate: 128,
-          
+
           });
 
-                    // Add compressor to the audio resource
-          var resource = createAudioResource(stream);
-
-          instance.setCurrentResource(resource)
-
-          player.play(resource);
-          instance.connection.subscribe(player);
-          clog.log(`GUILD : ${instance.guildId} - Lecture de la musique (Youtube): ${song.title} - id : ${song.id}`) 
+        return stream
     
-           } catch(e) {
-                clog.error("Erreur lors de la lecture de la musique : " + song.title)
-                clog.error(e)
-           }
+    } catch(e) {
+        clog.error("Erreur lors de la récupération du stream : " + song.title)
+        clog.error(e)
+               
+    }
 }
 
-module.exports = {play}
+
+module.exports = {getStream}

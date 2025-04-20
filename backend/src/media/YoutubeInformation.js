@@ -1,28 +1,29 @@
 const { LogType } = require('loguix');
 const clog = new LogType("YoutubeInformation");
 const { Song } = require('../player/Song');
-const { Playlist } = require('../player/Playlist');
+const { Playlist } = require('../playlists/Playlist');
 const { getReadableDuration } = require('../utils/TimeConverter');
 const ytsr = require('@distube/ytsr');
 const ytfps = require('ytfps');
 
-async function getQuery(query) {
-    if (query === null || typeof query !== 'string') {
+async function getQuery(query, multiple) {
+    if (!query || typeof query !== 'string') {
         clog.error("Impossible de rechercher une vidéo YouTube, car la requête est nulle");
         return null;
     }
 
     try {
-        const searchResults = await ytsr(query, { limit: 1 });
-        const video = searchResults.items.find(item => item.type === 'video');
+        const limit = multiple ? 25 : 1;
+        const searchResults = await ytsr(query, { limit });
+        const videos = searchResults.items.filter(item => item.type === 'video');
 
-        if (!video) {
+        if (videos.length === 0) {
             clog.error("Impossible de récupérer le lien de la vidéo YouTube à partir de la requête");
             return null;
         }
 
-        const song = await getVideo(video.url);
-        return song;
+        const songs = await Promise.all(videos.map(video => getVideo(video.url)));
+        return multiple ? songs.filter(song => song !== null) : songs[0];
     } catch (error) {
         clog.error('Erreur lors de la recherche YouTube: ' + error);
         return null;

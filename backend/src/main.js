@@ -21,4 +21,6 @@ setup();
 async function setup() {
     const DiscordBot = require("./discord/Bot")
     DiscordBot.init()
+    const Server = require("./server/Server")
+    Server.init()
 }

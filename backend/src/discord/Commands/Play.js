@@ -2,7 +2,7 @@ const { Command } = require("../Command");
 const { Embed, EmbedError } = require("../Embed");
 const { Player } = require("../../player/Player");
 const Finder = require("../../player/Finder");
-const { Playlist } = require("../../player/Playlist");
+const { Playlist } = require("../../playlists/Playlist");
 const spotify = require("../../media/SpotifyInformation");
 
 const command = new Command("play", "Jouer une musique à partir d'un lien dans un salon vocal", async (client, interaction) => {
@@ -44,6 +44,7 @@ const command = new Command("play", "Jouer une musique à partir d'un lien dans 
             embed.addField('**Durée : **', song.readduration)
             embed.addField("**Artiste : **",song.author)
             embed.addField('**Demandé par **' + interaction.member.user.username, "")
+            embed.addField("**Lien :** ", song.url)
             embed.setThumbnail(song.thumbnail)
             
 
