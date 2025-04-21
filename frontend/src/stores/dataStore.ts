@@ -159,3 +159,40 @@ export const lectureListStore = defineStore('lecture', {
         }
     }
 });
+
+export const historyListStore = defineStore('history', {
+    state: () => ({
+        history: [
+            {
+                name: 'LofiGirl',
+                title: 'lofi hip hop mix 📚 beats to relax/study to (Part 1)',
+                thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+            },
+            {
+                name: 'LofiGirl',
+                title: 'lofi hip hop mix 📚 beats to relax/study to (Part 2)',
+                thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+            },
+            {
+                name: 'LofiGirl',
+                title: 'lofi hip hop mix 📚 beats to relax/study to (Part 3)',
+                thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+            },
+            {
+                name: 'LofiGirl',
+                title: 'lofi hip hop mix 📚 beats to relax/study to (Part 4)',
+                thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+            },
+        ]
+    }),
+
+    actions: {
+        updateHistoryList(lecture: { name: string; title: string; thumbnail: string }[]) {
+            this.history = lecture;
+        },
+
+        clearHistoryList() {
+            this.history = [];
+        }
+    }
+});

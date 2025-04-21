@@ -34,15 +34,14 @@ function togglePlay() {
           class="play_button"
           @click="togglePlay"
       >
-        <PlayIcon v-if="isPlaying"/>
-        <PauseIcon v-else />
+        <PauseIcon v-if="isPlaying"/>
+        <PlayIcon v-else />
       </button>
       <button><NextIcon /></button>
     </div>
     <div class="player__actions">
       <button><RepeatIcon /></button>
       <button><ShuffleIcon /></button>
-      <button><SoundIcon /></button>
       <button><HandIcon /></button>
       <button><LeaveIcon /></button>
     </div>
