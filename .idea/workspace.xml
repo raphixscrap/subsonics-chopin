@@ -5,22 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5847035d-0a9b-4d26-a129-e3ed88eb8bd7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/DefaultPlaylist.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/stores/dataStore.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/InPlayListIcon.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/items/SwitchTab.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Global.scss" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Global.scss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/Trash.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/Trash.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/Player.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Player.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/MiniatureList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/MiniatureList.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/PlaylistItem.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/PlaylistItem.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/stores/globalStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/stores/globalStore.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/views/Home.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/views/Home.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/views/HomeDesktop.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/views/HomeDesktop.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/views/HomeTablet.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/views/HomeTablet.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,30 +43,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;frontend-0.2.0&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/gabriel/Documents/GitHub/chopin/frontend/src/views&quot;,
-    &quot;list.type.of.created.stylesheet&quot;: &quot;SCSS&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/gabriel/Documents/GitHub/chopin/frontend/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "frontend-0.2.0",
+    "last_opened_file_path": "/Users/gabriel/Documents/Project/GitHub/chopin/frontend/src/assets/Icons",
+    "list.type.of.created.stylesheet": "SCSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/gabriel/Documents/Project/GitHub/chopin/frontend/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;vue.recent.templates&quot;: [
-      &quot;Vue Composition API Component&quot;
+  "keyToStringList": {
+    "vue.recent.templates": [
+      "Vue Composition API Component"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/frontend/src/assets/Icons" />
       <recent name="$PROJECT_DIR$/frontend/src/views" />
       <recent name="$PROJECT_DIR$/frontend/src/items" />
       <recent name="$PROJECT_DIR$/frontend/src/components" />
@@ -85,7 +79,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-WS-243.25659.40" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-WS-243.26053.12" />
       </set>
     </attachedChunks>
   </component>
@@ -100,7 +94,17 @@
       <workItem from="1740503281735" duration="34792000" />
       <workItem from="1740931209372" duration="2409000" />
       <workItem from="1740934406955" duration="5718000" />
-      <workItem from="1740989873081" duration="10636000" />
+      <workItem from="1740989873081" duration="18670000" />
+      <workItem from="1741365838888" duration="54000" />
+      <workItem from="1741628247325" duration="887000" />
+      <workItem from="1742802910685" duration="950000" />
+      <workItem from="1743000529409" duration="1573000" />
+      <workItem from="1743168539274" duration="1223000" />
+      <workItem from="1743406006503" duration="564000" />
+      <workItem from="1744218861266" duration="19000" />
+      <workItem from="1744793678915" duration="3951000" />
+      <workItem from="1744962250986" duration="599000" />
+      <workItem from="1744963762669" duration="3595000" />
     </task>
     <servers />
   </component>
