@@ -15,6 +15,7 @@ const search = searchStore();
           :thumbnail="video.thumbnail"
           :title="video.title"
           :name="video.name"
+          :duration="video.duration"
       />
     </div>
   </div>

@@ -7,6 +7,7 @@ const props = defineProps<{
   thumbnail: string;
   title: string;
   name: string;
+  duration: string;
 }>();
 </script>
 
@@ -14,6 +15,7 @@ const props = defineProps<{
   <div class="miniature">
     <div class="miniature__img">
       <img :src="props.thumbnail" alt="Video Thumbnail" />
+      <p class="miniature__img__duration" >{{duration}}</p>
       <div class="miniature__img__overlay">
         <button>
           <Add />
@@ -52,6 +54,17 @@ const props = defineProps<{
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    &__duration {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 12px;
     }
 
     &:hover .miniature__img__overlay {
@@ -105,6 +118,8 @@ const props = defineProps<{
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      color: var(--neutral-500);
+      font-size: 12px;
     }
   }
 }

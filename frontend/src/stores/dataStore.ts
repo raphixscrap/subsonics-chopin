@@ -19,21 +19,25 @@ export const searchStore = defineStore('search', {
                 name: 'LofiGirl',
                 title: 'lofi hip hop mix 📚 beats to relax/study to (Part 1)',
                 thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+                duration: '2:00:00',
             },
             {
                 name: 'LofiGirl',
                 title: 'lofi hip hop mix 📚 beats to relax/study to (Part 2)',
                 thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+                duration: '1:00:00',
             },
             {
                 name: 'LofiGirl',
                 title: 'lofi hip hop mix 📚 beats to relax/study to (Part 3)',
                 thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+                duration: '3:00:00',
             },
             {
                 name: 'LofiGirl',
                 title: 'lofi hip hop mix 📚 beats to relax/study to (Part 4)',
                 thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
+                duration: '00:30:00',
             },
         ]
     }),
@@ -43,7 +47,7 @@ export const searchStore = defineStore('search', {
             this.searchQuery = query;
         },
 
-        updateVideosSearch(videoList: { name: string; title: string; thumbnail: string }[]) {
+        updateVideosSearch(videoList: { name: string; title: string; thumbnail: string; duration: string }[]) {
             this.videos = videoList;
         },
 
@@ -163,11 +167,6 @@ export const lectureListStore = defineStore('lecture', {
 export const historyListStore = defineStore('history', {
     state: () => ({
         history: [
-            {
-                name: 'LofiGirl',
-                title: 'lofi hip hop mix 📚 beats to relax/study to (Part 1)',
-                thumbnail: 'https://i.ytimg.com/vi/CFGLoQIhmow/hqdefault.jpg',
-            },
             {
                 name: 'LofiGirl',
                 title: 'lofi hip hop mix 📚 beats to relax/study to (Part 2)',
