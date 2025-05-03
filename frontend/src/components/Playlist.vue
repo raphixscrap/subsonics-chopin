@@ -2,6 +2,7 @@
 import { defineProps } from 'vue';
 import PlaylistItem from "../items/PlaylistItem.vue";
 import {playlistsListStore} from "../stores/dataStore.ts";
+import Button from "../items/Button.vue";
 
 const props = defineProps({
   popup: {
@@ -22,6 +23,12 @@ const playlists = playlistsListStore();
           :imgSrc="playlist.origin"
       />
     </div>
+    <Button
+        type="primary"
+        label="Créer une playlist"
+        :on-click="() => {}"
+        :disabled="false"
+    />
   </div>
 </template>
 
@@ -44,16 +51,19 @@ const playlists = playlistsListStore();
 
 .playlist--popup, .playlist {
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   border-radius: 25px;
   background: var(--neutral-100);
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 30px;
 
   &__content {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
-    padding: 30px;
     box-sizing: border-box;
     overflow: scroll;
     overflow-x: hidden;

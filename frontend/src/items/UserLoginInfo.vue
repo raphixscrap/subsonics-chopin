@@ -8,7 +8,7 @@ const userLoginInfo = userOnlineStore();
 <template>
   <div class="user-login-info">
     <UserIcon />
-    <p class="sub-text">{{ userLoginInfo.nbUser }}</p>
+    <p class="sub-text colorFixedWhite">{{ userLoginInfo.nbUser }}</p>
   </div>
 </template>
 

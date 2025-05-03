@@ -3,6 +3,7 @@
 import {defineProps} from "vue";
 
 const props = defineProps<{
+  selectedTab?: 1 | 2;
   tab1Click?: (event: MouseEvent) => void;
   tab1Label?: string;
   tab2Click?: (event: MouseEvent) => void;
@@ -15,7 +16,7 @@ const props = defineProps<{
   <div class="tab-container">
     <button v-on:click="props.tab1Click" class="tab tab--1">{{ props.tab1Label }}</button>
     <button v-on:click="props.tab2Click" class="tab tab--2">{{ props.tab2Label }}</button>
-    <div class="indicator"></div>
+    <div class="indicator" :class="props.selectedTab == 1 ? 'indicator-left' : 'indicator-right'" ></div>
   </div>
 </template>
 
@@ -39,11 +40,16 @@ const props = defineProps<{
   background: var(--neutral-100);
   position: absolute;
   top: 2px;
-  left: 2px;
   z-index: 9;
   border: 0.5px solid rgba(0, 0, 0, 0.04);
   border-radius: 7px;
-  transition: all 0.2s ease-out;
+  transition: left 0.2s ease-out;
+}
+.indicator-left {
+  left: 2px;
+}
+.indicator-right {
+  left: calc(50% - 2px);
 }
 
 .tab {

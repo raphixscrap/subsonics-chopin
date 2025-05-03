@@ -47,7 +47,6 @@ onMounted(() => {
   outline: none;
   background-color: var(--neutral-50);
   color: var(--neutral-950);
-  transition: .3s ease;
 }
 
 .input::placeholder {
