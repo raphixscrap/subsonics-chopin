@@ -35,7 +35,7 @@ const props = defineProps<{
       color: white;
 
       &:hover {
-        background-color: var(--primary-600);
+        background-color: var(--primary-500);
       }
     }
 

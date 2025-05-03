@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import {ref, onMounted, onUnmounted, computed} from "vue";
 import HomeMobile from "./HomeMobile.vue";
 import HomeTablet from "./HomeTablet.vue";
 import HomeDesktop from "./HomeDesktop.vue";
@@ -37,11 +37,26 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("resize", updateScreenSize);
 });
+
+const CurrentComponent = computed(() => {
+  switch (screenSize.value) {
+    case 'mobile':
+      return HomeMobile;
+    case 'tablet':
+      return HomeTablet;
+    case 'desktop':
+      return HomeDesktop;
+    default:
+      return null;
+  }
+});
+
 </script>
 
 <template>
   <div class="home-container">
-    <component :is="screenSize === 'mobile' ? HomeMobile : screenSize === 'tablet' ? HomeTablet : HomeDesktop" />
+    <component v-if="CurrentComponent" :is="CurrentComponent" />
+    <p v-else>Composant introuvable</p>
   </div>
 </template>
 

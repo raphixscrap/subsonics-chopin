@@ -14,7 +14,7 @@
 /* From Uiverse.io by mobinkakei */
 .loader {
   --path: var(--neutral-950);
-  --dot: var(--primary-600);
+  --dot: var(--primary-500);
   --duration: 2.5s;
   --size: 44px;
   width: var(--size);
