@@ -5,7 +5,7 @@ import UserLoginInfo from "../items/UserLoginInfo.vue";
 import SetingsIcon from "../assets/Icons/SetingsIcon.vue";
 import DarkModeIcone from "../assets/Icons/DarkModeIcone.vue";
 import LightModeIcone from "../assets/Icons/LightModeIcone.vue";
-import {ref} from "vue";
+import {onMounted, ref} from "vue";
 import router from "../router.ts";
 
 
@@ -18,6 +18,12 @@ function switchThemeMode() {
   document.documentElement.setAttribute("data-theme", newTheme);
   themeIs.value = newTheme;
 }
+
+onMounted(() => {
+  const storedTheme = localStorage.getItem("theme");
+    themeIs.value = storedTheme || "dark";
+    document.documentElement.setAttribute("data-theme", storedTheme || "dark");
+});
 
 function navigateToSettings() {
   router.push("/settings");
