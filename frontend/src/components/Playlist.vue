@@ -25,10 +25,11 @@ const playlists = playlistsListStore();
     </div>
     <Button
         type="primary"
-        label="Créer une playlist"
         :on-click="() => {}"
         :disabled="false"
-    />
+    >
+      Créer une playlist
+    </Button>
   </div>
 </template>
 

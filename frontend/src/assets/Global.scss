@@ -92,18 +92,13 @@ body {
 }
 
 #app {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 10px;
   background: var(--neutral-50);
   color: var(--neutral-950);
   height: 100vh;
   width: 100vw;
-  padding: 10px;
   box-sizing: border-box;
 }
+
 button {
   color: var(--neutral-900);
 }

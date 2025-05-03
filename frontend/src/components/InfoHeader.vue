@@ -5,7 +5,8 @@ import UserLoginInfo from "../items/UserLoginInfo.vue";
 import SetingsIcon from "../assets/Icons/SetingsIcon.vue";
 import DarkModeIcone from "../assets/Icons/DarkModeIcone.vue";
 import LightModeIcone from "../assets/Icons/LightModeIcone.vue";
-import {onMounted, ref} from "vue";
+import {ref} from "vue";
+import router from "../router.ts";
 
 
 const themeIs = ref("dark");
@@ -18,17 +19,9 @@ function switchThemeMode() {
   themeIs.value = newTheme;
 }
 
-onMounted(() => {
-  const savedTheme = localStorage.getItem("theme");
-
-  if (savedTheme === "light" || savedTheme === "dark") {
-    themeIs.value = savedTheme;
-  } else {
-    themeIs.value = "dark";
-  }
-
-  document.documentElement.setAttribute("data-theme", themeIs.value);
-});
+function navigateToSettings() {
+  router.push("/settings");
+}
 </script>
 
 <template>
@@ -48,7 +41,11 @@ onMounted(() => {
         <DarkModeIcone v-if="themeIs == 'dark'" />
         <LightModeIcone v-if="themeIs == 'light'" />
       </button>
-      <button><SetingsIcon /></button>
+      <button
+        @click="navigateToSettings"
+      >
+        <SetingsIcon />
+      </button>
     </div>
   </div>
 </template>
