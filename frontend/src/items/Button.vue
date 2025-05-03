@@ -24,7 +24,7 @@ const props = defineProps<{
     justify-content: center;
     align-items: center;
     padding: 10px 20px;
-    border-radius: 25px;
+    border-radius: 15px;
     font-size: 16px;
     font-weight: 500;
     cursor: pointer;
