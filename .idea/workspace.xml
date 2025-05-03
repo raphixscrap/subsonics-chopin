@@ -5,15 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5847035d-0a9b-4d26-a129-e3ed88eb8bd7" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/SaveIcon.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/UploadIcon.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Global.scss" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Global.scss" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/Header.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Header.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/Player.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Player.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/Button.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Button.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/Loader.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Loader.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/PlaylistItem.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/PlaylistItem.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/views/Home.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/views/Home.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/items/SwitchTab.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/SwitchTab.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,7 +106,7 @@
       <workItem from="1744962250986" duration="599000" />
       <workItem from="1744963762669" duration="7674000" />
       <workItem from="1745243053934" duration="15721000" />
-      <workItem from="1746260006352" duration="16911000" />
+      <workItem from="1746260006352" duration="20086000" />
     </task>
     <servers />
   </component>

@@ -28,15 +28,6 @@ const historyList = historyListStore();
   <div :class="props.popup == true ? 'lecture-list--popup' : 'lecture-list'">
     <div class="lecture-list__content">
       <div class="lecture-list__header">
-        <div v-if="nav == 'lecture'">
-          <button>
-            <Trash color="#FF306F"/>
-          </button>
-          <div>
-            <p>{{ lecturesList.lectures.length }}</p>
-            <InPlayListIcon/>
-          </div>
-        </div>
         <SwitchTab
             :selectedTab="nav == 'lecture' ? 1 : 2"
             tab1-label="Liste de lecture"
@@ -44,6 +35,15 @@ const historyList = historyListStore();
             tab2-label="Historique de lecture"
             :tab2-click="() => {switchNav('history')}"
         />
+        <div class="sub_header" v-if="nav == 'lecture'">
+          <div>
+            <p>{{ lecturesList.lectures.length }}</p>
+            <InPlayListIcon/>
+          </div>
+          <button>
+            <Trash color="#FF306F"/>
+          </button>
+        </div>
       </div>
       <MiniatureList
           v-if="nav == 'lecture'"
@@ -87,12 +87,27 @@ const historyList = historyListStore();
   overflow: hidden;
 
   &__header {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    box-sizing: border-box;
 
-    div {
+
+    .sub_header {
+      flex : 1 1 auto;
       display: flex;
       align-items: center;
-      justify-content: end;
+      justify-content: center;
       gap: 5px;
+      box-sizing: border-box;
+
+
+      div {
+        display: flex;
+        align-content: center;
+        align-items: center;
+      }
     }
   }
 

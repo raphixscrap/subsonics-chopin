@@ -2,6 +2,7 @@
 import { defineProps } from 'vue';
 import Add from "../assets/Icons/Add.vue";
 import Play from "../assets/Icons/Play.vue";
+import SaveIcon from "../assets/Icons/SaveIcon.vue";
 
 const props = defineProps<{
   thumbnail: string;
@@ -17,11 +18,20 @@ const props = defineProps<{
       <img :src="props.thumbnail" alt="Video Thumbnail" />
       <p class="miniature__img__duration" >{{duration}}</p>
       <div class="miniature__img__overlay">
-        <button>
+        <button
+          title="Ajouter à la liste de lecture"
+        >
           <Add />
         </button>
-        <button>
+        <button
+          title="Jouer le song maintenant"
+        >
           <Play />
+        </button>
+        <button
+          title="Ajouter à la playlist"
+        >
+          <SaveIcon />
         </button>
       </div>
     </div>
