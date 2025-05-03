@@ -39,7 +39,7 @@ header {
   align-items: center;
   gap: 10px;
   align-self: stretch;
-  background-color: var(--primary-600);
+  background-color: var(--primary-500);
   border-radius: 15px;
 }
 

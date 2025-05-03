@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, ref, onMounted, onBeforeUnmount } from 'vue';
+import {defineProps, ref, onMounted, onBeforeUnmount} from 'vue';
 import DotsMenu from "../assets/Icons/DotsMenu.vue";
 import YoutubePlaylist from "../assets/Icons/YoutubePlaylist.vue";
 import Trash from "../assets/Icons/Trash.vue";
@@ -14,51 +14,57 @@ const props = defineProps<{
 
 let dotsMenuActive = ref(false);
 
-// Fonction pour afficher / masquer le menu
 const toggleMenu = (event: MouseEvent) => {
   event.stopPropagation();
   dotsMenuActive.value = !dotsMenuActive.value;
 };
 
-// Fermer le menu si on clique en dehors
 const closeMenu = () => {
   dotsMenuActive.value = false;
 };
 
-// Ajoute l'écouteur pour fermer au clic global
 onMounted(() => {
   document.addEventListener("click", closeMenu);
 });
 
-// Supprime l'écouteur quand le composant est démonté
 onBeforeUnmount(() => {
   document.removeEventListener("click", closeMenu);
 });
+
+function oppenPlaylist() {
+  //todo: ouvrir la playlist
+  console.log("Ouvrir la playlist");
+}
 </script>
 
 <template>
   <div class="play-list">
-    <YoutubePlaylist v-if="imgSrc == 'youtube'" />
-    <DefaultPlaylist v-else />
-    <div class="play-list__info">
-      <p class="play-list__info__title" :title="props.title">{{ props.title }}</p>
-    </div>
+    <button
+        class="play-list__content"
+            @click.stop="oppenPlaylist"
+    >
+      <YoutubePlaylist v-if="imgSrc == 'youtube'"/>
+      <DefaultPlaylist v-else/>
+      <div class="play-list__info">
+        <p class="play-list__info__title" :title="props.title">{{ props.title }}</p>
+      </div>
+    </button>
     <button @click.stop="toggleMenu">
-      <DotsMenu />
+      <DotsMenu/>
     </button>
 
     <div v-if="dotsMenuActive" class="overlay" @click="closeMenu"></div>
     <div :class="['play-list__dots-menu', { 'play-list__dots-menu--active': dotsMenuActive }]">
       <button>
-        <Add />
+        <Add/>
         Ajouter
       </button>
       <button>
-        <Play />
+        <Play/>
         Lire
       </button>
       <button>
-        <Trash />
+        <Trash/>
         Supprimer
       </button>
     </div>
@@ -74,6 +80,15 @@ onBeforeUnmount(() => {
   gap: 10px;
   flex-shrink: 0;
 
+  &__content {
+    display: flex;
+    width: 100%;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+  }
   &__info {
     display: flex;
     flex-direction: column;
@@ -83,12 +98,15 @@ onBeforeUnmount(() => {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
+    box-sizing: border-box;
 
     &__title {
+      text-align: start;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
       width: 100%;
+      box-sizing: border-box;
     }
   }
 

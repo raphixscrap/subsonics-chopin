@@ -19,7 +19,7 @@ const userLoginInfo = userOnlineStore();
   align-items: center;
   gap: 5px;
   border-radius: 4px;
-  background: var(--primary-600);
+  background: var(--primary-500);
   color: var(--neutral-50);
 }
 
