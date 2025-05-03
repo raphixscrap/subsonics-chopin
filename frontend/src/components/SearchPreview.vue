@@ -2,6 +2,7 @@
 
 import Miniature from "../items/Miniature.vue";
 import {searchStore} from "../stores/dataStore.ts";
+import Loader from "../items/Loader.vue";
 
 const search = searchStore();
 </script>
@@ -10,6 +11,7 @@ const search = searchStore();
   <div class="search-preview">
     <div class="search-preview__content">
       <Miniature
+          v-if="search.videos != undefined"
           v-for="video in search.videos"
           :key="video.title"
           :thumbnail="video.thumbnail"
@@ -17,6 +19,10 @@ const search = searchStore();
           :name="video.name"
           :duration="video.duration"
       />
+      <Loader
+          v-else
+          class="search-preview__loader"
+          />
     </div>
   </div>
 </template>

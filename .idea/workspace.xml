@@ -5,40 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5847035d-0a9b-4d26-a129-e3ed88eb8bd7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/DarkModeIcone.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/LightModeIcone.vue" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/items/Button.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/items/Loader.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Global.scss" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Global.scss" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/Add.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/Add.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/DefaultPlaylist.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/DefaultPlaylist.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/DotsMenu.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/DotsMenu.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/HandIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/HandIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/InPlayListIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/InPlayListIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/LeaveIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/LeaveIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/LectureListIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/LectureListIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/LogoIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/LogoIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/NextIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/NextIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/PauseIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/PauseIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/Play.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/Play.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/PlayIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/PlayIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/PlaylistIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/PlaylistIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/PrevIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/PrevIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/RepeatIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/RepeatIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/SearchIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/SearchIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/SetingsIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/SetingsIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/ShuffleIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/ShuffleIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/SoundIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/SoundIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/Top.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/Top.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/UserIcon.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/UserIcon.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Icons/YoutubePlaylist.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/YoutubePlaylist.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/InfoHeader.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/InfoHeader.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/LectureList.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Miniature.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/SwitchTab.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/SwitchTab.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/UserLoginInfo.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/stores/dataStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/stores/dataStore.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -133,7 +103,7 @@
       <workItem from="1744962250986" duration="599000" />
       <workItem from="1744963762669" duration="7674000" />
       <workItem from="1745243053934" duration="15721000" />
-      <workItem from="1746260006352" duration="5873000" />
+      <workItem from="1746260006352" duration="7898000" />
     </task>
     <servers />
   </component>

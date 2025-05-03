@@ -2,12 +2,14 @@
 import {lectureListIsOpen, playlistsIsOpen} from '../stores/globalStore.ts'
 import {searchStore} from '../stores/dataStore.ts'
 import SearchIcon from "../assets/Icons/SearchIcon.vue";
-import {onMounted} from "vue";
+import {onMounted, ref} from "vue";
 
 const search = searchStore();
 
 const lectureList = lectureListIsOpen();
 const playlists = playlistsIsOpen();
+
+const inputRef = ref<HTMLInputElement | null>(null);
 
 const updateSearch = (event: Event) => {
   lectureList.closeLectureList();
@@ -16,14 +18,22 @@ const updateSearch = (event: Event) => {
 };
 
 onMounted(() => {
-  (document.querySelector('.input') as HTMLInputElement).value = search.searchQuery;
+  if (inputRef.value) {
+    inputRef.value.value = search.searchQuery;
+  }
 });
 </script>
 
 <template>
   <div class="group">
     <SearchIcon />
-    <input placeholder="Search" type="search" class="input" @input="updateSearch">
+    <input
+        placeholder="Search"
+        type="search"
+        class="input"
+        @input="updateSearch"
+        ref="inputRef"
+    >
   </div>
 </template>
 
