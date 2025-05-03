@@ -2,7 +2,6 @@
 import {defineProps} from "vue";
 
 const props = defineProps<{
-  label: string;
   type: 'primary' | 'secondary' | 'tertiary';
   disabled: boolean;
   onClick: () => void;
@@ -15,7 +14,7 @@ const props = defineProps<{
       :disabled="props.disabled"
       @click="props.onClick"
   >
-    {{ props.label }}
+    <slot />
   </button>
 </template>
 

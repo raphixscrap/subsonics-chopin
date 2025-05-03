@@ -5,11 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5847035d-0a9b-4d26-a129-e3ed88eb8bd7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/frontend/src/items/Loader.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/Icons/DiscordLogo.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/components/SettingsHeader.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/router.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/views/DiscordLogin.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/views/HomeMobile.vue" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/views/Settings.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/SearchPreview.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/InputSearch.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/stores/dataStore.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/stores/dataStore.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/assets/Global.scss" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/assets/Global.scss" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/InfoHeader.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/InfoHeader.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/Playlist.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/items/Button.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/items/Button.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/main.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/views/Home.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/views/Home.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -70,6 +81,7 @@
       <recent name="$PROJECT_DIR$/frontend/src/components" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/frontend/src/views" />
       <recent name="$PROJECT_DIR$/frontend/src/assets/Icons" />
     </key>
   </component>
@@ -103,7 +115,7 @@
       <workItem from="1744962250986" duration="599000" />
       <workItem from="1744963762669" duration="7674000" />
       <workItem from="1745243053934" duration="15721000" />
-      <workItem from="1746260006352" duration="7898000" />
+      <workItem from="1746260006352" duration="14220000" />
     </task>
     <servers />
   </component>
