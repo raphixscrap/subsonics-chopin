@@ -8,6 +8,7 @@ const props = defineProps<{
   tab1Label?: string;
   tab2Click?: (event: MouseEvent) => void;
   tab2Label?: string;
+  tab1Lecture?: number;
 }>();
 
 </script>
@@ -22,7 +23,7 @@ const props = defineProps<{
 
 <style scoped>
 .tab-container {
-  width: 100%;
+  width: 79%;
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -30,7 +31,7 @@ const props = defineProps<{
   padding: 2px;
   background-color: var(--neutral-50);
   border-radius: 9px;
-  margin: 10px 20px 0px 20px;
+  margin-right: 5px;
 }
 
 .indicator {
