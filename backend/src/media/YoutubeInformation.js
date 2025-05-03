@@ -62,13 +62,24 @@ async function getPlaylist(url) {
     }
 
     try {
-        const playlistId = url.match(/(?:youtu\.be\/|youtube\.com\/|music\.youtube\.com\/)(?:playlist\?list=)?([a-zA-Z0-9_-]{34})/);
+
+        // If watch?v= is present in the url with list?=, remove it and the code behind and transform it to playlist?list=
+        var playlistId;
+
+        // Get  &list= in the url until the first & or ? 
+
+        if (url.includes("list=")) {
+            playlistId = url.match(/(list=)([a-zA-Z0-9_-]+)/);
+        }
+        
+        console.log(playlistId);
+
         if (playlistId === null) {
             clog.error("Impossible de récupérer l'identifiant de la playlist YouTube à partir de l'URL");
             return null;
         }
 
-        const playlistInfo = await ytfps(playlistId[1]);
+        const playlistInfo = await ytfps(playlistId[2]);
 
         if (!playlistInfo) {
             clog.error("Impossible de récupérer la playlist YouTube à partir de l'identifiant");
@@ -82,8 +93,8 @@ async function getPlaylist(url) {
         playlist.title = playlistInfo.title;
         playlist.thumbnail = playlistInfo.thumbnail_url;
         playlist.description = playlistInfo.description;
-        playlist.url = `https://www.youtube.com/playlist?list=${playlistId[1]}`;
-        playlist.id = playlistId[1];
+        playlist.url = `https://www.youtube.com/playlist?list=${playlistId[2]}`;
+        playlist.id = playlistId[2];
 
         for (const video of playlistInfo.videos) {
             const song = new Song();

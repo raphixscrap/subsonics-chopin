@@ -15,7 +15,7 @@ class Playlist {
         this.url = url;
         this.author = author;
         this.authorId = authorId;
-        this.songs = songs;
+        this.songs = songs || new Array();
         this.thumbnail = thumbnail;
         this.duration = duration;
         this.readduration = readduration;

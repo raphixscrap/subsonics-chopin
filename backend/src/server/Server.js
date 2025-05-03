@@ -1,6 +1,7 @@
 const {LogType} = require('loguix') 
 const wlog = new LogType("Server")
 
+const path = require("path")
 const {Server} = require('socket.io')
 const {createServer} = require('http')
 const session = require("../server/auth/Session")
@@ -21,6 +22,7 @@ const { restart } = require('../utils/Maintenance')
 
 const allConnectedUsers = new Array()
 const guildConnectedUsers = new Map()
+const UsersBySocket = new Map()
 
 function init() {
     
@@ -37,11 +39,11 @@ function init() {
     process.on("PLAYERS_UPDATE", () => {
         if(io) {
             // Get all players and send them to client subscribed to the guild
-            for(var guild of discordBot.getGuilds()) {
-                const player = players.getPlayer(guild.id)
+            for(var guild of discordBot.getGuilds().keys()) {
+                const player = players.getPlayer(guild)
                 if(player) {
-                    io.to(guild.id).emit("PLAYER_UPDATE", player.getState())
-                    wlog.log("Envoi de l'état du player de la guilde : " + guild.id + " à tous les utilisateurs connectés")
+                    io.to(player.guildId).emit("/PLAYER/UPDATE", player.getState())
+                    wlog.log("Envoi de l'état du player de la guilde : " + player.guildId + " à tous les utilisateurs connectés")
                 }
             }
         }
@@ -50,22 +52,37 @@ function init() {
     process.on("USERS_UPDATE", () => {
         if(io) {
             // Get all players and send them to client subscribed to the guild
-            for(var guild of discordBot.getGuilds()) {
-               if(guildConnectedUsers.has(guild.id)) {
-                    io.sockets.emit("USERS_UPDATE", guildConnectedUsers.get(guild.id))
-                    io.to("admin").emit("ALL_USERS_UPDATE", allConnectedUsers)  
-                    wlog.log("Envoi de la liste des utilisateurs connectés à la guilde : " + guild.id + " à tous les utilisateurs connectés")
+            for(var guild of discordBot.getGuilds().keys()) {
+               if(guildConnectedUsers.has(guild)) {
+                    io.to(guild).emit("/USERS/UPDATE", {"id": guild, "members": guildConnectedUsers.get(guild)} )
+                    io.to("ADMIN").emit("ALL_USERS_UPDATE", allConnectedUsers)  
+                    wlog.log("Envoi de la liste des utilisateurs connectés (" + guildConnectedUsers.get(guild).length +") à la guilde : " + guild + " à tous les utilisateurs connectés")
                 }
             }
         }
     })
 
 
-
-
     io.on("connection", async (socket) => {
+        var socketUser;
+
+        // Make sure Discord Bot is loaded and make an interruption until it is loaded
+        while(!discordBot.getClient().isReady()) {
+            wlog.warn("Attente de traitement : "+ socket.id + " : Le bot Discord n'est pas encore chargé, attente de 1 seconde...")
+            await new Promise(resolve => setTimeout(resolve, 1000))
+        }
 
         wlog.log(`Connexion d'un client : ${socket.id}`)
+
+        socket.on("disconnect", () => {
+            handleDisconnect()
+            wlog.log("Déconnexion du client : " + socket.id)
+        })
+
+        socket.on("error", (error) => {
+            handleDisconnect()
+            wlog.error("Erreur sur le socket : " + socket.id + " - " + error)
+        })
        
         if(socket.handshake.auth == undefined || socket.handshake.auth == {}) {
             wlog.warn("Authentification manquant pour le client :" + socket.id)
@@ -79,7 +96,7 @@ function init() {
 
         if(sessionId) {
             if(!session.checkSession(sessionId)) {
-                wlog.warn("Session invalide pour le client :" + socket.id)
+                wlog.warn("Session invalide pour le client : " + socket.id)
                 sendSession()
                 return;
             } else {
@@ -87,19 +104,18 @@ function init() {
                     const discordUser = await discordAuth.getDiscordUser(sessionId, auth_code)
                     session.removeSession(sessionId)
                     if(discordUser == "GUILDS_ERROR" || discordUser == "USER_INFO_ERROR" || discordUser == "ACCESS_TOKEN_ERROR") {
-                     
                         wlog.warn("Erreur lors de la récupération des informations de l'utilisateur Discord associé à la session : " + sessionId)
-                        socket.emit("AUTH_ERROR")
+                        socket.emit("AUTH_ERROR", discordUser)
                         socket.disconnect()
                         return
                     } else {
-                        const loggedUser = users.addUser(discordUser.auth, discordUser.identity, discordUser.guilds)
+                        const loggedUser = await users.addUser(discordUser.auth, discordUser.identity, discordUser.guilds)
                         for(var guild of discordUser.guilds) {
                             if(guild.owner) {
-                                users.setGuildOwner(loggedUser.identity.id, guild.id)
+                                users.setGuildOwner(loggedUser.identity.id, guild.id, true)
                             }
                         }
-                        const newToken = loggedUser.createToken()
+                        const newToken = await loggedUser.createToken()
                         socket.emit("NEW_TOKEN", newToken)
                         socket.disconnect()
                         wlog.log("Utilisateur Discord associé à la session : " + sessionId + " récupéré avec succès")
@@ -109,6 +125,8 @@ function init() {
                    
                 } else {
                     wlog.warn("Code d'authentification manquant pour le client :" + socket.id)
+                    socket.disconnect()
+                    return
                 }
             }
         } 
@@ -119,47 +137,81 @@ function init() {
             return
         }
 
-        const socketUser = users.getUserByToken(token)
+        socketUser = users.getUserByToken(token)
 
         if(!socketUser) {
             wlog.warn("Token invalide pour le client :" + socket.id)
             sendSession()
             return
+        } else {
+            if(!socketUser.auth) {
+                wlog.warn("L'utilisateur '" + socketUser.identity.username + "' n'a pas d'authentification Discord Valide")
+                socketUser.clearToken()
+                socket.emit("AUTH_ERROR", "AUTH_ERROR")
+                socket.disconnect()
+                return
+            }
+
+            await users.updateGuilds(socketUser.identity.id)
+            await users.updateIdentity(socketUser.identity.id)
         }
+
+        socketUser = users.getUserByToken(token)
             
         if(socketUser) {
+
             if(allConnectedUsers.includes(socketUser.identity.id)) {
                 wlog.warn("L'utilisateur '" + socketUser.identity.username + "' est déjà connecté sur un autre appareil")
                 return
             } else {
                 allConnectedUsers.push(socketUser.identity)
                 addGuildConnectedUser(socketUser.identity, socketUser.guilds)
-                process.emit("USERS_UPDATE")
+                UsersBySocket.set(socketUser.identity.id, socket.id)
+               
             }
 
             wlog.log("Utilisateur connecté : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)
+            process.emit("USERS_UPDATE")
 
             if(socketUser.isFullBanned()) {
                 wlog.warn("Utilisateur banni : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)
                 socket.emit("BANNED")
                 socket.disconnect()
             }
-            if(socketUser.labels.includes("admin")) {
-                socket.join("admin")
+            if(socketUser.isAdmin()) {
+                socket.join("ADMIN")
                 wlog.log("Utilisateur admin identifié : " + socketUser.identity.username + " (" + socketUser.identity.id + ")")
             }
 
             // USERS
 
+            // CHECKED : 24/04/2025
             IORequest("/USER/INFO", () => {
+                var guildPresents = new Array();
+                var guildsOfBot = discordBot.getGuilds()
+                for(var guild of guildsOfBot) {
+                    
+                    if(guild[1].members.includes(socketUser.identity.id)) {
+                        guildPresents.push(guild[1].id)
+                    }
+                }
                 IOAnswer("/USER/INFO", {
                     identity: socketUser.identity,
-                    guilds: socketUser.guilds, 
-                    labels: socketUser.labels
+                    guilds: guildPresents, 
+                    labels: socketUser.labels,
+                   
                 })
                 wlog.log("Envoi des informations Discord de '" + socketUser.identity.id + "' à '" + socket.id + "'" )
             })
 
+            //CHECKED : 24/04/2025
+            IORequest("/USER/SIGNOUT", () => {
+                socketUser.removeToken(token)
+                socket.disconnect()
+            })
+
+
+            // CHECKED : 24/04/2025 
             IORequest("/USERS/LIST", (guildId) => {
                 if(!checkUserGuild(socketUser, guildId)) return
                 if(!guildConnectedUsers.has(guildId)) return IOAnswer("/USERS/LIST", false)
@@ -171,27 +223,28 @@ function init() {
             IORequest("/PLAYER/PREVIOUS/LIST", (guildId) => {   
                 if(!checkUserGuild(socketUser, guildId)) return
                 const list = new List(guildId)
-                return list.getPrevious()
+                IOAnswer("/PLAYER/PREVIOUS/LIST", list.getPrevious())
             })
+
+            //TODO: Faire les autres reqêtes sur la liste
 
             IORequest("/PLAYER/JOIN", (guildId) => {
                 if(!checkUserGuild(socketUser, guildId)) return
                 wlog.log("L'utilisateur '" + socketUser.identity.username + "' rejoint la liste d'écoute du player de la guilde : " + guildId)
+                // Make him to leave all the other rooms except the ADMIN room if he is admin
+                socket.rooms.forEach((room) => {
+                    if(room != "ADMIN") {
+                        socket.leave(room)
+                    }
+                })
                 socket.join(guildId)
                 IOAnswer("PLAYER_STATE", true)
             })
 
-            IORequest("/PLAYER/LEAVE", (guildId) => {
-                if(!checkUserGuild(socketUser, guildId)) return
-                wlog.log("L'utilisateur '" + socketUser.identity.username + "' quitte la liste d'écoute du player de la guilde : " + guildId)
-                socket.leave(guildId)
-                IOAnswer("PLAYER_STATE", false)
-            })
-
             IORequest("/PLAYER/STATE", (guildId) => {
-                handlePlayerAction(guildId, (player) => player.getState(), "/PLAYER/STATE");
+                handlePlayerAction(guildId, async (player) => await player.getState(), "/PLAYER/STATE");
             })
-
+ 
             IORequest("/PLAYER/PAUSE", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.pause(), "/PLAYER/PAUSE");
             });
@@ -227,7 +280,11 @@ function init() {
                 }, "/PLAYER/CHANNEL/CHANGE");
             });
 
-            IORequest("/PLAYER/SEEK", (guildId, time) => {
+            IORequest("/PLAYER/SEEK", (data) => {
+                if(!data) return IOAnswer("/PLAYER/SEEK", false)
+                const {guildId, time} = data
+                if(!guildId) return IOAnswer("/PLAYER/SEEK", false)
+                if(!time) return IOAnswer("/PLAYER/SEEK", false)
                 handlePlayerAction(guildId, (player) => {
                     // Check if current is not null
                     if(player.queue.current == null) {
@@ -239,7 +296,11 @@ function init() {
                 }, "/PLAYER/SEEK");
             });
 
-            IORequest("/QUEUE/PLAY/NOW", (guildId, listType, index) => {
+            IORequest("/QUEUE/PLAY/NOW", (data) => {
+                if(!data) return IOAnswer("/QUEUE/PLAY/NOW", false)
+                const {guildId, song} = data
+                if(!song) return IOAnswer("/QUEUE/PLAY/NOW", false)
+                if(!guildId) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(!checkUserGuild(socketUser, guildId)) return
                 const player = new Player(guildId)
                 if(!connectToPlayer(guildId, player)) return IOAnswer("/QUEUE/PLAY", false)
@@ -255,7 +316,11 @@ function init() {
                 IOAnswer("/QUEUE/PLAY/NOW", true)
             })
 
-            IORequest("/QUEUE/NEXT/DELETE", (guildId, index) => {
+            IORequest("/QUEUE/NEXT/DELETE", (data) => {
+                if(!data) return IOAnswer("/QUEUE/NEXT/DELETE", false)
+                const {guildId, index} = data
+                if(!guildId) return IOAnswer("/QUEUE/NEXT/DELETE", false)
+                if(!index) return IOAnswer("/QUEUE/NEXT/DELETE", false)
                 handlePlayerAction(guildId, (player) => {
                     const next = player.queue.getNext()
                     if(!next[index]) return IOAnswer("/QUEUE/NEXT/DELETE", false);
@@ -267,7 +332,12 @@ function init() {
                 handlePlayerAction(guildId, (player) => player.queue.clearNext())
             })
 
-            IORequest("/QUEUE/NEXT/MOVE", (guildId, index, newIndex) => {
+            IORequest("/QUEUE/NEXT/MOVE", (data) => {
+                if(!data) return IOAnswer("/QUEUE/NEXT/MOVE", false)
+                const {guildId, index, newIndex} = data
+                if(!guildId) return IOAnswer("/QUEUE/NEXT/MOVE", false)
+                if(!index) return IOAnswer("/QUEUE/NEXT/MOVE", false)
+                if(!newIndex) return IOAnswer("/QUEUE/NEXT/MOVE", false)
                 handlePlayerAction(guildId, (player) => {
                     const next = player.queue.getNext()
                     if(!next[index]) return IOAnswer("/QUEUE/NEXT/MOVE", false);
@@ -277,11 +347,16 @@ function init() {
 
             // SEARCH
 
+            // CHECKED : 24/04/2025 
             IORequest("/SEARCH", async (query) => {
-                IOAnswer("/SEARCH", await Finder.search(query)) 
+                IOAnswer("/SEARCH", await Finder.search(query, true)) 
             })
 
-            IORequest("/SEARCH/PLAY", async (guildId, song, now) => {
+            IORequest("/SEARCH/PLAY", async (data) => {
+                if(!data) return IOAnswer("/SEARCH/PLAY", false)
+                const {guildId, song, now} = data
+                if(!song) return IOAnswer("/SEARCH/PLAY", false)
+                if(!guildId) return IOAnswer("/SEARCH/PLAY", false)
                 if(!checkUserGuild(socketUser, guildId)) return
                 const player = new Player(guildId)
                 if(!connectToPlayer(guildId, player)) return IOAnswer("/SEARCH/PLAY", false)
@@ -296,25 +371,36 @@ function init() {
             
             // PLAYLISTS
 
-            IORequest("/PLAYLISTS/CREATE", (name, url) => {
+            // CHECKED : 30/04/2025
+            IORequest("/PLAYLISTS/CREATE", async (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/CREATE", false)
+                const {name, url} = data
                 if(!name) return IOAnswer("/PLAYLISTS/CREATE", false)
-                const playlist = playlists.addPlaylist(socketUser.identity.id, name, url)
+                const playlist = await playlists.addPlaylist(socketUser.identity.id, name, url)
                 if(!playlist) return IOAnswer("/PLAYLISTS/CREATE", false)
                 IOAnswer("/PLAYLISTS/CREATE", true)
             })
 
-            IORequest("/PLAYLISTS/DELETE", (name) => {
+             // CHECKED : 30/04/2025
+            IORequest("/PLAYLISTS/DELETE", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/DELETE", false)
+                const {name} = data
                 if(!name) return IOAnswer("/PLAYLISTS/DELETE", false)
                 playlists.removePlaylist(socketUser.identity.id, name)
                 IOAnswer("/PLAYLISTS/DELETE", true)
             })
 
+            // CHECKED : 24/04/2025
             IORequest("/PLAYLISTS/LIST", () => {
                 const playlist = playlists.getPlaylistsOfUser(socketUser.identity.id)
                 IOAnswer("/PLAYLISTS/LIST", playlist)
             })
 
-            IORequest("/PLAYLISTS/SEND", (name, toId) => {
+            // CHECKED : 30/04/2025
+            IORequest("/PLAYLISTS/SEND", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/SEND", false)
+                const {name, toId} = data   
+                if(!name || !toId) return IOAnswer("/PLAYLISTS/SEND", false)
                 // Check if toId is in the same guilds as the user
                 // Check if the toId exists and have a playlist with the same name
                 const toUser = users.getUserById(toId)
@@ -327,7 +413,10 @@ function init() {
                 IOAnswer("/PLAYLISTS/SEND", true)
             })
 
-            IORequest("/PLAYLISTS/RENAME", (name, newName) => {
+            // CHECKED : 30/04/2025
+            IORequest("/PLAYLISTS/RENAME", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/RENAME", false)
+                const {name, newName} = data
                 if(!name || !newName) return IOAnswer("/PLAYLISTS/RENAME", false)
                 const playlist = playlists.getPlaylistOfUser(socketUser.identity.id, name)
                 if(!playlist) return IOAnswer("/PLAYLISTS/RENAME", false)
@@ -335,21 +424,33 @@ function init() {
                 IOAnswer("/PLAYLISTS/RENAME", true) 
             })
 
-            IORequest("/PLAYLISTS/ADD_SONG", (name, song) => {
+            // CHECKED : 30/04/2025 
+            IORequest("/PLAYLISTS/ADD_SONG", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/ADD_SONG", false)
+                const {name, song} = data
+                if(!name || !song) return IOAnswer("/PLAYLISTS/ADD_SONG", false)
                 const playlist = playlists.getPlaylistOfUser(socketUser.identity.id, name)
                 if(!playlist) return IOAnswer("/PLAYLISTS/ADD_SONG", false)
                 playlists.addSong(socketUser.identity.id, name, song)
                 IOAnswer("/PLAYLISTS/ADD_SONG", true)
             })
 
-            IORequest("/PLAYLISTS/REMOVE_SONG", (name, songId) => {
+            // CHECKED : 30/04/2025
+            IORequest("/PLAYLISTS/REMOVE_SONG", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/REMOVE_SONG", false)
+                const {name, songId} = data
+                if(!name || !songId) return IOAnswer("/PLAYLISTS/REMOVE_SONG", false)
                 const playlist = playlists.getPlaylistOfUser(socketUser.identity.id, name)
                 if(!playlist) return IOAnswer("/PLAYLISTS/REMOVE_SONG", false)
                 playlists.removeSong(socketUser.identity.id, name, songId)
                 IOAnswer("/PLAYLISTS/REMOVE_SONG", true)
             })
 
-            IORequest("/PLAYLISTS/PLAY", (guildId, name, now) => {
+            IORequest("/PLAYLISTS/PLAY", (data) => {
+                if(!data) return IOAnswer("/PLAYLISTS/PLAY", false)
+                const {name, guildId, now} = data
+                if(!name || !guildId) return IOAnswer("/PLAYLISTS/PLAY", false)
+                if(!checkUserGuild(socketUser, guildId)) return IOAnswer("/PLAYLISTS/PLAY", false)
                 const playlist = playlists.getPlaylistOfUser(socketUser.identity.id, name)
                 if(!playlist) return IOAnswer("/PLAYLISTS/PLAY", false)
                 const player = new Player(guildId)
@@ -361,8 +462,10 @@ function init() {
 
             // ADMIN
 
-            if(socketUser.labels.includes("admin")) {
+            if(socketUser.isAdmin()) {
+                // CHECKED : 24/04/2025
                 IORequest("/ADMIN/LOGS", () => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/LOGS", false)
                     const logs_data = new Array()
                     const logs_folder = fs.readdirSync(__glob.LOGS)
                     for(var log of logs_folder) {
@@ -371,53 +474,94 @@ function init() {
                     IOAnswer("/ADMIN/LOGS", logs_data)
                 })
 
+                // CHECKED : 24/04/2025
                 IORequest("/ADMIN/MAINTENANCE/RESTART", (reason) => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/MAINTENANCE/RESTART", false)
                    if(!reason) return IOAnswer("/ADMIN/MAINTENANCE/RESTART", false)
                    restart(reason)
                 })
 
+                // CHECKED : 24/04/2025
                 IORequest("/ADMIN/USERS/SWITCH_ADMIN", (userId) => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/USERS/SWITCH_ADMIN", false)
+                    if(socketUser.identity.id == userId) return IOAnswer("/ADMIN/USERS/SWITCH_ADMIN", false)
+                    if(!users.getUserById(userId)) return IOAnswer("/ADMIN/USERS/SWITCH_ADMIN", false)
                     users.setAdmin(userId)
-                    IOAnswer("/ADMIN/USERS/PROMOTE_ADMIN", true)
+                    IOAnswer("/ADMIN/USERS/SWITCH_ADMIN", true)
                 })
 
+                // CHECKED : 24/04/2025
                 IORequest("/ADMIN/USERS/FULL_BAN", (userId) => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/USERS/FULL_BAN", false)
+                    if(socketUser.identity.id == userId) return IOAnswer("/ADMIN/USERS/FULL_BAN", false)
+                    if(!users.getUserById(userId)) return IOAnswer("/ADMIN/USERS/FULL_BAN", false)
+                    if(users.getUserById(userId).isAdmin()) return IOAnswer("/ADMIN/USERS/FULL_BAN", false)
                     users.setFullBan(userId)
                     IOAnswer("/ADMIN/USERS/FULL_BAN", true)
                 })
 
+
+                // CHECKED : 24/04/2025
                 IORequest("/ADMIN/USERS/DELETE", (userId) => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/USERS/DELETE", false)
+                    if(socketUser.identity.id == userId) return IOAnswer("/ADMIN/USERS/DELETE", false)
+                    if(!users.getUserById(userId)) return IOAnswer("/ADMIN/USERS/DELETE", false)
+                    if(users.getUserById(userId).isAdmin()) return IOAnswer("/ADMIN/USERS/DELETE", false)
+                        
                     users.removeUser(userId)
+                    const userSocket = UsersBySocket.get(userId)
+                    if(userSocket) {
+                        const socket = io.sockets.sockets.get(userSocket)
+                        if(socket) {
+                            socket.emit("DELETED")
+                            socket.disconnect()
+                        }
+                    }
                     IOAnswer("/ADMIN/USERS/DELETE", true)
                 })
 
-                IORequest("/ADMIN/PLAYER/GETALLSTATE", () => {
-                    
+                // CHECKED : 24/04/2025
+                IORequest("/ADMIN/PLAYER/GETALLSTATE", async () => {
+                    if(!socketUser.isAdmin()) return IOAnswer("/ADMIN/PLAYER/GETTALLSTATE", false)
                     const allPlayers = players.getAllPlayers()
                     const states = new Array()
-                    for(var player of allPlayers) {
-                        states.push(player.getState())
+                    for(var player in allPlayers) {
+                        await states.push(await player.getState())
                     }
                     IOAnswer("/ADMIN/PLAYER/GETALLSTATE", states)
                 })
             }
 
-            IORequest("/OWNER/USERS/SWITCH_MOD", (userId, guildId) => {
+            // CHECKED : 24/04/2025
+            IORequest("/OWNER/USERS/SWITCH_MOD", (data) => {
+                if(!data["userId"] || !data["guildId"]) return IOAnswer("/OWNER/USERS/SWITCH_MOD", false)
+                const userId = data["userId"]
+                const guildId = data["guildId"]
+                if(socketUser.identity.id == userId) return IOAnswer("/OWNER/USERS/SWITCH_MOD", false)
                 if(!socketUser.isOwner(guildId)) return IOAnswer("/OWNER/USERS/SWITCH_MOD", false)
                 users.setGuildMod(userId, guildId)
                 IOAnswer("/OWNER/USERS/SWITCH_MOD", true)
             })
 
-            IORequest("/MOD/USERS/BAN", (userId, guildId) => {
+            
+            // CHECKED : 24/04/2025
+            IORequest("/MOD/USERS/BAN", (data) => {
+                if(!data["userId"] || !data["guildId"]) return IOAnswer("/MOD/USERS/BAN", false)
+                const userId = data["userId"]
+                const guildId = data["guildId"]
+                if(socketUser.identity.id == userId) return IOAnswer("/MOD/USERS/BAN", false)
                 if(!socketUser.isMod(guildId)) return IOAnswer("/MOD/USERS/BAN", false)
                 users.setGuildBan(userId, guildId)
-                IOAnswer("/OWNER/USERS/BAN", true)
+                IOAnswer("/MOD/USERS/BAN", true)
             })
 
             // UTILS
 
-            IORequest("/REPORT", (level, desc) => {
-                const report = new Report(socketUser.identity.username, level, desc).send()
+            // CHECKED : 24/04/2025
+            IORequest("/REPORT", (data) => {
+                if(data.length < 2) return IOAnswer("/REPORT", false)
+                if(!data["level"] || !data["desc"]) return IOAnswer("/REPORT", false)
+                const report = new Report(socketUser.identity.username, data["level"], data["desc"]).send()
                 IOAnswer("/REPORT", true)
             })
 
@@ -457,12 +601,16 @@ function init() {
 
 
             function checkUserGuild(socketUser, guildId) {
-                // Vérifie si l'utilisateur n'est pas banni de la guilde
+                // Check if the guildId is referenced in the bot guilds 
+                if(!discordBot.getGuilds().has(guildId)) {
+                    wlog.warn("La guilde : " + guildId + " n'est pas référencée dans le bot")
+                    return false
+                }
                 if(socketUser.isBanned(guildId)) {
                     wlog.warn("L'utilisateur '" + socketUser.identity.username + "' est banni de la guilde : " + guildId)
                     return false
                 }
-                if(!socketUser.guilds.includes(guildId)) {
+                if(!socketUser.guilds.find(g => g.id == guildId)) {
                     wlog.warn("L'utilisateur '" + socketUser.identity.username + "' n'est pas membre de la guilde : " + guildId)
                     // Si user admin, override
                     if(!socketUser.isAdmin()) {
@@ -470,6 +618,7 @@ function init() {
                     }
                     wlog.log("L'utilisateur '" + socketUser.identity.username + "' est admin donc à le droit d'accéder à la guilde : " + guildId)
                 }
+
                 return true
             }
 
@@ -491,14 +640,20 @@ function init() {
             
         }
         
-    
-        socket.on("disconnect", () => {
-            allConnectedUsers.splice(allConnectedUsers.indexOf(socketUser.identity), 1)
-            socket.leave("admin")
-            removeGuildConnectedUser(socketUser.identity)
-            process.emit("USERS_UPDATE")
-            clog.log(`Déconnexion du client : ${socket.id}`)
-        })
+       
+
+        function handleDisconnect() {
+            if(socketUser) {
+                wlog.log("Déconnexion de l'utilisateur : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)
+                allConnectedUsers.splice(allConnectedUsers.indexOf(socketUser.identity), 1)
+                removeGuildConnectedUser(socketUser.identity)
+                process.emit("USERS_UPDATE")
+                if(socketUser.isAdmin()) {
+                    socket.leave("ADMIN")
+                }
+                UsersBySocket.delete(socketUser.identity.id)
+            }
+        }
 
         function sendSession() {
             const newSession = session.addSession(socket.id)
@@ -509,17 +664,16 @@ function init() {
 
         
         function IORequest(RequestName, RequestCallback) {
-            socket.on(GQname, (value) => {
-                wlog.log(socketUser.identity.username + " - Socket : " + socket.id  + " - POST/" + GQname + " - [RECIEVED]") 
-                GQcallback(value)
+            socket.on(RequestName, (value) => {
+                wlog.log(socketUser.identity.username + " - Socket : " + socket.id  + " - " + RequestName + " - [RECIEVED]") 
+                RequestCallback(value)
             })
         
         }
         function IOAnswer(AnswerName, AnswerValue) {
         
-            wlog.log(socketUser.identity.username + " - Socket : " + socket.id  + " - POST/" + GRname + " - [ANSWERED]") 
-            socket.emit("ANSWER/" + GRname, GRvalue)
-            process.emit("PLAYERS_UPDATE")
+            wlog.log(socketUser.identity.username + " - Socket : " + socket.id  + " - " + AnswerName + " - [ANSWERED]") 
+            socket.emit(AnswerName, AnswerValue)
         }
 
     })
@@ -531,16 +685,16 @@ function init() {
 
     function AdminRequest(GRname, GRvalue) {
 
-        io.to("admin").emit("ALWAYS/" + GRname, GRvalue)
+        io.to("ADMIN").emit("ALWAYS/" + GRname, GRvalue)
     
     }
 
     function addGuildConnectedUser(user, guilds) {
        for(var guild of guilds) {
             if(!guildConnectedUsers.has(guild)) {
-                guildConnectedUsers.set(guild, new Array())
+                guildConnectedUsers.set(guild.id, new Array())
             }
-            guildConnectedUsers.get(guild).push(user)
+            guildConnectedUsers.get(guild.id).push(user)
         }
         
     }

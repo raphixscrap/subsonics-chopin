@@ -83,6 +83,10 @@ class Database {
 
     }
 
+    getData() {
+        return this.data
+    }
+
 }
 
 

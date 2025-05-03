@@ -14,6 +14,7 @@ class Song {
     duration;
     readduration;
     type;
+    userAddedId; 
 
     constructor(properties) {
         if(properties) {
@@ -27,6 +28,7 @@ class Song {
             this.readduration = properties.readduration ?? this.readduration
             this.type = properties.type ?? this.type
             this.authorId = properties.authorId ?? this.authorId
+            
         }
     }
 

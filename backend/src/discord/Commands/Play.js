@@ -62,13 +62,7 @@ const command = new Command("play", "Jouer une musique à partir d'un lien dans 
             if(song.type == "spotify") {
                 song = await spotify.getTracks(song)
             }
-            if(now) {
-                player.readPlaylist(song, true)
-                
-            } else {
-                player.readPlaylist(song)
-      
-            }
+            player.readPlaylist(song, now)
         } else {
 
 

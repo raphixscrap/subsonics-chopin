@@ -3,11 +3,11 @@ const { __glob } = require('../../utils/GlobalVars');
 const { generateToken } = require('../../utils/TokenManager');  
 const { LogType } = require('loguix');
 const clog = new LogType("User");
+const discordAuth = require('./DiscordAuth');
+const e = require('cors');
 
 const UserDB = new Database("Users", __glob.USERFILE, []);
-const userList = new Array();
-loadUsers();
-
+var userList = new Array();
 class User {
     auth;
     identity;
@@ -23,43 +23,117 @@ class User {
     }
 
     setAdmin() {
-        if (this.labels.includes("ADMIN")) {
-            this.labels.splice(this.labels.indexOf("ADMIN"), 1);
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        if (userInUserList.labels.includes("ADMIN")) {
+            userInUserList.labels.splice(userInUserList.labels.indexOf("ADMIN"), 1);
             clog.log(`L'utilisateur ${this.identity.username} n'est plus admin.`);
         } else {
-            this.labels.push("ADMIN");
+            userInUserList.labels.push("ADMIN");
             clog.log(`L'utilisateur ${this.identity.username} est maintenant admin.`);
         }
+        saveUsers()
     }
 
     setBan(guildId) {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
         const banLabel = `BAN_${guildId}`;
-        if (this.labels.includes(banLabel)) {
-            this.labels.splice(this.labels.indexOf(banLabel), 1);
+        if (userInUserList.labels.includes(banLabel)) {
+            userInUserList.labels.splice(userInUserList.labels.indexOf(banLabel), 1);
             clog.log(`L'utilisateur ${this.identity.username} n'est plus banni du serveur ${guildId}.`);
         } else {
-            this.labels.push(banLabel);
+            userInUserList.labels.push(banLabel);
             clog.log(`L'utilisateur ${this.identity.username} est maintenant banni du serveur ${guildId}.`);
         }
+        saveUsers()
     }
 
     createToken() {
-        const token = generateToken();
-        this.tokens.push(token);
+        const token = generateToken(this.identity.id);
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        userInUserList.tokens.push(token);
         saveUsers();
         clog.log(`Token créé pour l'utilisateur ${this.identity.username}.`);
         return token;
     }
 
     removeToken(token) {
-        const index = this.tokens.indexOf(token);
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        const index = userInUserList.tokens.indexOf(token);
         if (index > -1) {
-            this.tokens.splice(index, 1);
+            userInUserList.tokens.splice(index, 1);
             saveUsers();
             clog.log(`Token supprimé pour l'utilisateur ${this.identity.username}.`);
         } else {
             clog.warn(`Token non trouvé pour l'utilisateur ${this.identity.username}.`);
         }
+    }
+
+    clearToken() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        userInUserList.tokens = [];
+        saveUsers();
+        clog.log(`Tous les tokens supprimés pour l'utilisateur ${this.identity.username}.`);
+        return userInUserList.tokens;
+    }
+
+    clearAuth() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        userInUserList.auth = null;
+        saveUsers();
+        clog.log(`Authentification supprimée pour l'utilisateur ${this.identity.username}.`);
+    }
+
+    destroyAuth() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        userInUserList.auth = null;
+        userInUserList.tokens = [];
+        saveUsers();
+        clog.log(`Authentification et tokens supprimés pour l'utilisateur ${this.identity.username}.`);    
+    
+    }
+
+    setFullBan() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return null;
+        }
+        if (userInUserList.labels.find(label => label == "BAN")) {
+            userInUserList.labels.splice(userInUserList.labels.indexOf("BAN"), 1);
+            clog.log(`L'utilisateur ${this.identity.username} n'est plus banni.`);
+        } else {
+            userInUserList.labels.push("BAN");
+            clog.log(`L'utilisateur ${this.identity.username} est maintenant banni.`);
+        }
+        saveUsers()
     }
 
     isBanned(guildId) {
@@ -80,15 +154,142 @@ class User {
 
     isOwner(guildId) {
         const ownerLabel = `OWNER_${guildId}`;
+        if(this.isAdmin()) return true;
         return this.labels.includes(ownerLabel);
     }
 
+   
 
-}   
 
-// ADD
+} 
 
-function addUser(auth, identity, guilds) {
+//REFRESH USER
+
+async function refreshAllUserInformation() {
+    await loadUsers();
+    clog.log("Récupération des informations de tous les utilisateurs...");
+    for (const user of userList) {
+        await refreshUserInformation(user.identity.id);
+    }
+    saveUsers();
+}
+
+async function refreshUserInformation(id) {
+    const user = getUserById(id);
+    if (!user) {
+        clog.warn(`Utilisateur ${id} non trouvé.`);
+        return null;
+    }
+    clog.log(`Récupération (Refresh) des informations de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
+    if (user.auth) {
+        const refresh_token = user.auth.refresh_token;
+        const authCredientials = await discordAuth.refreshToken(refresh_token);
+        if(authCredientials) {
+            user.auth = authCredientials;
+            const guilds = await discordAuth.getUserGuilds(authCredientials);
+            const identity = await discordAuth.getUserIdentity(authCredientials);
+            if(identity) {
+                user.identity = identity;
+                clog.log(`Récupération réussie des informations de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            else {
+                clog.warn(`Erreur lors de la récupération des informations de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            if(guilds) {
+                user.guilds = guilds;
+                clog.log(`Récupération réussie des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            else {
+                clog.warn(`Erreur lors de la récupération des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            // Update the user in the list
+            const userInUserList = userList.find(u => u.identity.id === user.identity.id);
+            if (userInUserList) {
+                userInUserList.auth = user.auth;
+                userInUserList.guilds = user.guilds;
+            }
+        } else {
+            clog.warn(`Erreur lors de la récupération du token d'accès pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            // Delete tokens to oblige the user to reauthenticate
+            // Clear auth
+           
+            user.destroyAuth();
+            return null;
+        }
+    } else {
+        clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+    }
+
+}
+
+async function updateGuilds(id) {
+    const user = getUserById(id);
+    if (!user) {
+        clog.warn(`Utilisateur ${id} non trouvé.`);
+        return null;
+    }
+    clog.log(`Mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
+    if (user.auth) {
+            const guilds = await discordAuth.getUserGuilds(user.auth);
+            if(guilds) {
+                user.guilds = guilds;
+                clog.log(`Mise à jour réussie des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            else {
+                clog.warn(`Erreur lors de la mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            }
+            // Update the user in the list
+            const userInUserList = userList.find(u => u.identity.id === user.identity.id);
+            if (userInUserList) {
+                userInUserList.auth = user.auth;
+                userInUserList.guilds = user.guilds;
+            }
+    } else {
+        clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+    }
+    saveUsers();
+    return user.guilds;
+}
+
+async function updateIdentity(id) {
+    const user = getUserById(id);
+    if (!user) {
+        clog.warn(`Utilisateur ${id} non trouvé.`);
+        return null;
+    }
+    clog.log(`Mise à jour de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
+    if (user.auth) {
+        const identity = await discordAuth.getUserIdentity(user.auth);
+        if(identity) {
+            user.identity = identity;
+            clog.log(`Mise à jour réussie de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+        }
+        else {
+            clog.warn(`Erreur lors de la mise à jour de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+        }
+        // Update the user in the list
+        const userInUserList = userList.find(u => u.identity.id === user.identity.id);
+        if (userInUserList) {
+            userInUserList.auth = user.auth;
+            userInUserList.identity = user.identity;
+        }
+    } else {
+        clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+    }
+    saveUsers();
+    return user.identity;
+}
+
+// EDIT USER
+
+/**
+ * 
+ * @param {*} auth 
+ * @param {*} identity 
+ * @param {*} guilds 
+ * @returns {User} user
+ */
+async function addUser(auth, identity, guilds) {
     // Check if the user already exists
     const existingUser = userList.find(user => user.identity.id === identity.id);
     if (existingUser) {
@@ -107,7 +308,7 @@ function addUser(auth, identity, guilds) {
     const newUser = new User(auth, identity, [], [], guilds);
 
     userList.push(newUser);
-    saveUsers();
+    await saveUsers();
     return newUser;
 }
 
@@ -233,6 +434,10 @@ function setGuildMod(id, guildId) {
 function setGuildBan(id, guildId) {
     const user = getUserById(id);
     if (user) {
+        if(user.isAdmin()) {
+            clog.warn(`L'utilisateur ${user.identity.username} est admin, il ne peut pas être banni.`);
+            return;
+        }
         user.setBan(guildId);
         saveUsers();
     } else {
@@ -243,21 +448,28 @@ function setGuildBan(id, guildId) {
 function setFullBan(id) {
     const user = getUserById(id);
     if (user) {
-        user.labels.push("BAN");
+        if(user.isAdmin()) {
+            clog.warn(`L'utilisateur ${user.identity.username} est admin, il ne peut pas être banni.`);
+            return;
+        }
+        user.setFullBan();
         saveUsers();
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
 
-function setGuildOwner(id, guildId) {
+function setGuildOwner(id, guildId, force) {
     const user = getUserById(id);
     if (user) {
         const ownerLabel = `OWNER_${guildId}`;
-        if (user.labels.includes(ownerLabel)) {
+        if (user.labels.includes(ownerLabel) && !force) {
             user.labels.splice(user.labels.indexOf(ownerLabel), 1);
             clog.log(`L'utilisateur ${user.identity.username} n'est plus propriétaire du serveur ${guildId}.`);
         } else {
+            if(force && user.labels.includes(ownerLabel)) {
+                return;
+            }
             user.labels.push(ownerLabel);
             clog.log(`L'utilisateur ${user.identity.username} est maintenant propriétaire du serveur ${guildId}.`);
         }
@@ -272,8 +484,8 @@ function setGuildOwner(id, guildId) {
 
 function loadUsers() {
     UserDB.load()
-    userList.length = 0; 
-    for (const user in UserDB.data) {
+    userList = new Array();
+    for (const user of UserDB.getData()) {
         userList.push(new User(user.auth, user.identity, user.tokens, user.labels, user.guilds));
     }
     clog.log(`Chargement de ${userList.length} utilisateurs.`);
@@ -298,4 +510,23 @@ function saveUsers() {
 
 
 module.exports = {User}   
-module.exports = {addUser, setGuildOwner , setFullBan, removeUser, getUserByToken , getUserById, getUsers, setAdmin, setGuildMod, setGuildBan, addToken, removeToken, getSimpleUsers, getSimpleUser}
+module.exports = {
+    addUser, 
+    setGuildOwner, 
+    setFullBan, 
+    removeUser, 
+    getUserByToken, 
+    getUserById, 
+    getUsers, 
+    setAdmin, 
+    setGuildMod, 
+    setGuildBan, 
+    addToken, 
+    removeToken, 
+    getSimpleUsers, 
+    getSimpleUser,
+    refreshUserInformation,
+    refreshAllUserInformation,
+    updateGuilds,
+    updateIdentity
+};

@@ -1,6 +1,6 @@
 {
   "name": "chopin-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Discord Bot for music - Fetching everywhere !",
   "main": "src/main.js",
   "nodemonConfig": {
@@ -12,14 +12,16 @@
     "delay": "2000000"
   },
   "scripts": {
-    "start": "nodemon src/main.js"
+    "start": "nodemon src/main.js",
+    "stop": "ssh raphix@raphix.fr sudo -S -u gitlab-ci pm2 stop 'Subsonics'",
+    "restart": "ssh raphix@raphix.fr sudo -S -u gitlab-ci pm2 start 'Subsonics'"
   },
   "keywords": [],
   "author": "Raphix",
   "license": "ISC",
   "dependencies": {
     "@discordjs/voice": "^0.18.0",
-    "@distube/ytdl-core": "^4.16.8",
+    "@distube/ytdl-core": "^4.16.9",
     "@distube/ytsr": "2.0.4",
     "cors": "^2.8.5",
     "discord-player": "^7.1.0",

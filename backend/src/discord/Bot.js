@@ -6,6 +6,7 @@ const { LogType } = require("loguix")
 const config = require("../utils/Database/Configuration")
 const metric = require("webmetrik") 
 const { Player } = require("../player/Player")
+const {refreshAllUserInformation} = require("../server/auth/User")
 
 const dlog = new LogType("Discord")
 
@@ -37,18 +38,22 @@ function getChannel(guildId, channelId) {
 
 function init() {
         
-    client.once('ready', () => {
+    client.once('ready', async () => {
         dlog.log("Connexion au Bot Discord réussi ! Connecté en tant que : " + client.user.tag)
 
         // Add all guilds to the guilds map
-        client.guilds.cache.forEach(guild => {
-            guilds.set(guild.id, {
+        await client.guilds.cache.forEach(async guild => {
+            var guildMember = await guild.members.fetch()
+            guildMember = guildMember.map(member => member.user.id)
+            
+            await guilds.set(guild.id, {
                 id: guild.id,
                 name: guild.name,
-                members: guild.members.cache.map(member => member.user.username),
+                members: guildMember,
             })
+         
         })
-
+        refreshAllUserInformation()
         const Activity = require("./Activity")
         Activity.idleActivity()
 

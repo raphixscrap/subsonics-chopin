@@ -127,17 +127,19 @@ class Player {
     }
 
     getState() {
+        const playerStatus = this.player?.state?.status ?? false;
+        const connectionStatus = this.connection?.state?.status ?? false;
         const state = {
             current: this.queue.current,
             next: this.queue.next,
             previous: this.queue.previous,
             loop: this.loop,
             shuffle: this.queue.shuffle,
-            paused: this.player.state.status == AudioPlayerStatus.Paused,
-            playing: this.player.state.status == AudioPlayerStatus.Playing,
+            paused: playerStatus === AudioPlayerStatus.Paused,
+            playing: playerStatus === AudioPlayerStatus.Playing,
             duration: this.getDuration(),
-            playerState: this.player.state.status,
-            connectionState: this.connection.state.status,
+            playerState: playerStatus,
+            connectionState: connectionStatus,
             channelId: this.channelId
         }
         return state
