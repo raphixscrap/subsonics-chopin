@@ -10,7 +10,7 @@ const command = new Command("about", "Affiche des informations sur le bot", (cli
     const minutes = Math.floor((uptime % 3600) / 60);
     const seconds = Math.floor(uptime % 60);
 
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     embed.setColor(237, 12, 91)
     embed.setThumbnail("https://cdn.discordapp.com/avatars/" + client.user.id + "/" + client.user.avatar + ".png")
     embed.setTitle('Subsonics - Chopin')
@@ -31,7 +31,7 @@ const command = new Command("about", "Affiche des informations sur le bot", (cli
     embed.addField('Ytdl', packageJson.dependencies["@distube/ytdl-core"].replace("^", ""),true)
     embed.addColumn()
 
-    embed.send(interaction)
+    embed.send()
 
 
 })

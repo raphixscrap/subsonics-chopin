@@ -8,14 +8,14 @@ const command = new Command("state", "Affiche la musique en cours", (client, int
         const player = new Player(channel.guildId)
         const song = player.queue.getCurrent()
     
-            var embed = new Embed()
-            embed.setColor(0x15e6ed)
+           
+         
     
             if(!song) {
-                embed = new EmbedError("Il n'y a pas de musique en cours de lecture")
+                var embed = new EmbedError("Il n'y a pas de musique en cours de lecture", interaction)
         
             } else if(song) {
-                
+                var embed = new Embed(interaction)
                 // Result is a song
                 embed.setColor(0x15e6ed)
                 
@@ -25,10 +25,10 @@ const command = new Command("state", "Affiche la musique en cours", (client, int
                 embed.addField("**Artiste : **", song.author)
                 embed.setThumbnail(song.thumbnail)
             
-                
+                embed.send()
             }  
     
-            embed.send(interaction)
+           
 })
  
 module.exports = {command}

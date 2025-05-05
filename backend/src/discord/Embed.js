@@ -3,10 +3,18 @@ const { EmbedBuilder, ActionRowBuilder } = require("discord.js");
 class Embed {
     fields;
     buttons;
-    constructor() {
+    constructor (interaction, ephemeral) {
         this.embed = new EmbedBuilder().setTimestamp()
         this.fields = []
         this.buttons = []
+        this.isSended = false
+        if(interaction) {
+            interaction.deferReply({ ephemeral: ephemeral }).then(() => {
+                this.isSended = true
+            })
+            this.interaction = interaction
+            this.ephemeral = ephemeral
+        }
     }
 
     setTitle(title) {
@@ -92,19 +100,32 @@ class Embed {
         return this.embed
     }
 
-    send(interaction, ephemeral) {
-        if(ephemeral === undefined) ephemeral = false;
-        interaction.reply({ embeds: [this.build()], ephemeral: ephemeral, components: this.buttons.length > 0 ? [this.actionRow] : [] })
+    async send() {
+        // Add a secutiry check to avoid sending an embed if the interaction is not defined and retry one again
+        while(!this.isSended) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        if(this.ephemeral === undefined) this.ephemeral = false;
+        this.interaction.editReply({ embeds: [this.build()], components: this.buttons.length > 0 ? [this.actionRow] : [] })
     }
-}
 
-class EmbedError extends Embed {
-    constructor(message) {
-        super()
+    async returnError(message) {
         this.setColor(150, 20, 20)
         this.setTitle('Erreur')
         this.setThumbnail("https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Dialog-error-round.svg/2048px-Dialog-error-round.svg.png")
         this.setDescription(message)
+        await this.send()
+    }
+}
+
+class EmbedError extends Embed {
+    constructor(message, interaction, ephemeral) {
+        super(interaction, ephemeral)
+        this.setColor(150, 20, 20)
+        this.setTitle('Erreur')
+        this.setThumbnail("https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Dialog-error-round.svg/2048px-Dialog-error-round.svg.png")
+        this.setDescription(message)
+        this.send()
     }
 }
 

@@ -3,7 +3,7 @@ const { Embed } = require('../Embed');
 
 const command = new Command("help", "Affiche la liste des commandes", (client, interaction) => {
     
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     embed.setColor(0x03ff2d)
     embed.setTitle('Comment assister au concert ?')
     embed.setDescription("**Eh ! Tu as eu ton ticket ? Tant mieux ! Voici la liste des commandes à utiliser dans le salon prévu à cet effet !**")
@@ -28,7 +28,7 @@ const command = new Command("help", "Affiche la liste des commandes", (client, i
     })
     embed.addField("La queue et la gestion du redémarrage se fait par le site https://subsonics.raphix.fr/", ":star:" )
     embed.setThumbnail("https://static.wikia.nocookie.net/codelyoko/images/9/95/Subdigitals.jpg/revision/latest/scale-to-width-down/180?cb=20120105180510&path-prefix=fr");
-    embed.send(interaction)
+    embed.send()
 })
 
 module.exports = {command}

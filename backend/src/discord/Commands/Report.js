@@ -5,7 +5,7 @@ const { Report } = require('../ReportSender');
 const command = new Command("report", "Signaler un problème avec le bot", (client, interaction) => {
     const report = new Report(interaction.user.username, interaction.options.getString("type"), interaction.options.getString("description"))
     const result = report.send()
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     
 
     result.then((res) => {
@@ -20,7 +20,7 @@ const command = new Command("report", "Signaler un problème avec le bot", (clie
             embed.setDescription("Votre rapport a bien été envoyé !")
            
         }
-        embed.send(interaction)
+        embed.send()
     })
     
         

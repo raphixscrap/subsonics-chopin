@@ -5,20 +5,20 @@ const { Player } = require("../../player/Player")
 const command = new Command("pause", "Mettre en pause / Reprendre la musique en cours", (client, interaction) => {
 
 
-    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour mettre en pause la musique !").send(interaction)
+    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour mettre en pause la musique !", interaction)
 
     const channel = interaction.member.voice.channel
     const player = new Player(channel.guildId)
     const result = player.pause()
 
 
-    var embed = new Embed()
+    var embed = new Embed(interaction)
     embed.setColor(0x03ff2d)
 
     result.then((pause) => {
 
         if(pause == "no_music") {
-            embed = new EmbedError("Il n'y a pas de musique en cours de lecture")
+            embed.returnError("Il n'y a pas de musique en cours de lecture")
        
         } else if(pause) {
             embed.setTitle('Musique en pause')
@@ -32,7 +32,7 @@ const command = new Command("pause", "Mettre en pause / Reprendre la musique en 
             embed.setThumbnail("https://www.iconsdb.com/icons/download/white/play-64.png")
         }   
 
-        embed.send(interaction)
+        embed.send()
     })
     
     // Réponse en embed

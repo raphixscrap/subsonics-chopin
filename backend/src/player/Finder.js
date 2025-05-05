@@ -76,7 +76,7 @@ async function search(query, multiple, forceType) {
         return await soundcloud.getPlaylist(query)
         
     }
-    // TODO: Add more providers
+    //MORELATER: Add more providers
 }
 
 module.exports = {search}

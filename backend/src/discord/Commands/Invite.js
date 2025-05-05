@@ -3,7 +3,7 @@ const {Embed, EmbedError} = require("../Embed")
 const {Button} = require("../Button")
 
 const command = new Command("invite", "Invite moi sur d'autres serveurs", (client, interaction) => {
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     embed.setColor(0xFF007F)
     embed.setTitle('**Inviter le bot sur d\'autres serveurs**')
     embed.setDescription('Vous pouvez m\'inviter sur d\'autres serveurs en cliquant sur le bouton ci-dessous.')
@@ -13,7 +13,7 @@ const command = new Command("invite", "Invite moi sur d'autres serveurs", (clien
     const linkButton = new Button("Invite", null, 5, "https://discord.com/oauth2/authorize?client_id=" + client.user.id + "&scope=bot+applications.commands&permissions=8")
     embed.addButton(linkButton)
 
-    embed.send(interaction)
+    embed.send()
 
 })
 

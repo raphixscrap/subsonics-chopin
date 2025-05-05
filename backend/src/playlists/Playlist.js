@@ -1,3 +1,5 @@
+const { getReadableDuration } = require("../utils/TimeConverter");
+
 class Playlist {
     title = "Aucun titre";
     id;
@@ -17,8 +19,11 @@ class Playlist {
         this.authorId = authorId;
         this.songs = songs || new Array();
         this.thumbnail = thumbnail;
-        this.duration = duration;
-        this.readduration = readduration;
+        // Make the some of durations of the songs
+        if(this.songs.length > 0) {
+            this.duration = this.songs.reduce((acc, song) => acc + song.duration, 0);
+            this.readduration = getReadableDuration(this.duration);
+        }
         this.description = description;
         if(!this.url) {
             this.type = "playlist";

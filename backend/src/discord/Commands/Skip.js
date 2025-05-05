@@ -4,22 +4,21 @@ const { Player, AllPlayers } = require("../../player/Player")
 
 const command = new Command("skip", "Passe à la musique suivante", (client, interaction) => {   
     
-    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour passer à la musique suivante !").send(interaction)
+    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour passer à la musique suivante !", interaction)
 
     const channel = interaction.member.voice.channel
+    var embed = new Embed(interaction)
 
     if(AllPlayers.has(channel.guildId)) {
 
         const player = new Player(channel.guildId)
         const result = player.skip()
 
-
-        var embed = new Embed()
         embed.setColor(0x15e6ed)
         result.then((song) => {
 
             if(song == "no_music") {
-                embed = new EmbedError("Il n'y a pas de musique en file d'attente")
+                embed.returnError("Il n'y a pas de musique en file d'attente", interaction)
         
             } else if(song) {
                 
@@ -35,11 +34,11 @@ const command = new Command("skip", "Passe à la musique suivante", (client, int
                 
             }  
 
-            embed.send(interaction)
+            embed.send()
         })
 
     } else {
-        return new EmbedError("Le bot n'est pas connecté").send(interaction)
+        return embed.returnError("Le bot n'est pas connecté", interaction)
     }
 
     

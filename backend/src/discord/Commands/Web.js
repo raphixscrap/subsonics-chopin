@@ -4,7 +4,7 @@ const { Embed } = require('../Embed');
 const config = require('../../utils/Database/Configuration')
 
 const command = new Command("web", "Affiche le lien vers le site web pour contr√¥ler le bot", (client, interaction) => {
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     embed.setColor(0xffffff)
     embed.setTitle('Subsonics - Chopin')
     embed.addBotPicture(client)
@@ -13,7 +13,7 @@ const command = new Command("web", "Affiche le lien vers le site web pour contr√
     
     const linkButton = new Button("Site web", null, 5, config.getWebsiteLink())
     embed.addButton(linkButton)
-    embed.send(interaction)
+    embed.send()
 
 })
 

@@ -5,13 +5,16 @@ const { Song } = require('../../player/Song');
 
 const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal", async (client, interaction) => {
 
-    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour jouer un média !").send(interaction, true)
+    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour jouer un média !", interaction, true)
 
     const media = interaction.options.get("media")
     const now = interaction.options.getBoolean("now") || false
 
-    if(media.attachment.contentType != "audio/mpeg" && media.attachment.contentType != "audio/wav") return new EmbedError("Le média doit être un fichier audio MP3 ou WAV !").send(interaction)
+    if(media.attachment.contentType != "audio/mpeg" && media.attachment.contentType != "audio/wav") return new EmbedError("Le média doit être un fichier audio MP3 ou WAV !", interaction)
 
+
+    const embed = new Embed(interaction)
+    embed.setColor(0x15e6ed)
     const channel = interaction.member.voice.channel
     const song = new Song()
     await song.processMedia(media, interaction.user.username)
@@ -19,8 +22,7 @@ const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal
     const player = new Player(channel.guildId)
     player.join(channel)
 
-    const embed = new Embed()
-    embed.setColor(0x15e6ed)
+  
     
 
     if(now) { 
@@ -40,7 +42,7 @@ const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal
     embed.setThumbnail(song.thumbnail)
     
     
-    embed.send(interaction)
+    embed.send()
     
 
 }, [{type: "FILE", name: "media", description: "Fichier audio à lire", required: true},

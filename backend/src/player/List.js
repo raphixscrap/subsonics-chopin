@@ -204,6 +204,11 @@ class List {
     }
 
     moveNext(fromIndex, toIndex) {
+        // Check if fromIndex and toIndex are valid
+        if(fromIndex < 0 || fromIndex >= this.next.length + 1 || toIndex < 0 || toIndex >= this.next.length + 1) {
+            clog.error("Impossible de déplacer la musique, car l'index est invalide, GuildId : " + this.guildId)
+            return
+        }
         if(fromIndex == toIndex) return;
         const song = this.next[fromIndex]
         this.next.splice(fromIndex, 1)

@@ -7,18 +7,19 @@ const spotify = require("../../media/SpotifyInformation");
 
 const command = new Command("play", "Jouer une musique à partir d'un lien dans un salon vocal", async (client, interaction) => {
 
-    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour jouer une musique !").send(interaction)
+    if(!interaction.member.voice.channel) return new EmbedError("Vous devez rejoindre un salon vocal pour jouer une musique !", interaction)
 
     const url = interaction.options.get("url")
     const channel = interaction.member.voice.channel
     const now = interaction.options.getBoolean("now") || false
+    const embed = new Embed(interaction)
     await Finder.search(url.value).then(async (song) => {
-        if(!song) return new EmbedError("Impossible de trouver la musique à partir du lien donné ou des mots clés donnés").send(interaction)
+        if(!song) return embed.returnError("Impossible de trouver la musique à partir du lien donné ou des mots clés donnés")
     
         const player = new Player(channel.guildId)
         player.join(channel)
     
-        const embed = new Embed()
+     
         embed.setColor(0x15e6ed)
         
         // Check if song is playlist 
@@ -56,7 +57,7 @@ const command = new Command("play", "Jouer une musique à partir d'un lien dans 
             embed.setTitle("Ajoutée à la file d'attente")
         }
 
-        embed.send(interaction)
+        embed.send()
 
         if(song instanceof Playlist) {
             if(song.type == "spotify") {

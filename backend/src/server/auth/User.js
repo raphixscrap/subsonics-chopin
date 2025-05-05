@@ -169,58 +169,45 @@ async function refreshAllUserInformation() {
     await loadUsers();
     clog.log("Récupération des informations de tous les utilisateurs...");
     for (const user of userList) {
-        await refreshUserInformation(user.identity.id);
+        await updateCredientials(user.identity.id);
     }
     saveUsers();
 }
 
-async function refreshUserInformation(id) {
+async function updateCredientials(id) {
     const user = getUserById(id);
     if (!user) {
         clog.warn(`Utilisateur ${id} non trouvé.`);
         return null;
     }
-    clog.log(`Récupération (Refresh) des informations de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
+    clog.log(`Mise à jour des informations d'authentification Discord de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
     if (user.auth) {
-        const refresh_token = user.auth.refresh_token;
-        const authCredientials = await discordAuth.refreshToken(refresh_token);
-        if(authCredientials) {
-            user.auth = authCredientials;
-            const guilds = await discordAuth.getUserGuilds(authCredientials);
-            const identity = await discordAuth.getUserIdentity(authCredientials);
-            if(identity) {
-                user.identity = identity;
-                clog.log(`Récupération réussie des informations de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+        // Check if the token is expired
+        const auth = await discordAuth.refreshToken(user.auth.refresh_token);
+        if (auth) {
+            // Check Rate limit by checking if auth.message exists
+            if(typeof auth.message !== "undefined") {
+                clog.warn(`Erreur lors de la mise à jour des informations d'authentification de l'utilisateur ${user.identity.username} (${user.identity.id}) : ${auth.message}`);
+                return null;
             }
-            else {
-                clog.warn(`Erreur lors de la récupération des informations de l'utilisateur ${user.identity.username} (${user.identity.id})`);
-            }
-            if(guilds) {
-                user.guilds = guilds;
-                clog.log(`Récupération réussie des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
-            }
-            else {
-                clog.warn(`Erreur lors de la récupération des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
-            }
-            // Update the user in the list
-            const userInUserList = userList.find(u => u.identity.id === user.identity.id);
-            if (userInUserList) {
-                userInUserList.auth = user.auth;
-                userInUserList.guilds = user.guilds;
-            }
+            user.auth = auth;
+            clog.log(`Mise à jour réussie des informations d'authentification de l'utilisateur ${user.identity.username} (${user.identity.id})`);
         } else {
-            clog.warn(`Erreur lors de la récupération du token d'accès pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
-            // Delete tokens to oblige the user to reauthenticate
-            // Clear auth
-           
-            user.destroyAuth();
-            return null;
+            clog.warn(`Erreur lors de la mise à jour des informations d'authentification de l'utilisateur ${user.identity.username} (${user.identity.id})`);
         }
-    } else {
+        // Update the user in the list
+        const userInUserList = userList.find(u => u.identity.id === user.identity.id);
+        if (userInUserList) {
+            userInUserList.auth = user.auth;
+        }
+    }
+    else {
         clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
     }
-
+    saveUsers();
+    return user.auth;
 }
+
 
 async function updateGuilds(id) {
     const user = getUserById(id);
@@ -232,11 +219,16 @@ async function updateGuilds(id) {
     if (user.auth) {
             const guilds = await discordAuth.getUserGuilds(user.auth);
             if(guilds) {
+                if(typeof guilds.message !== "undefined") {
+                    clog.warn(`Erreur lors de la mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id}) : ${guilds.message}`);
+                    return null;
+                }
                 user.guilds = guilds;
                 clog.log(`Mise à jour réussie des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
             }
             else {
                 clog.warn(`Erreur lors de la mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+                return null;
             }
             // Update the user in the list
             const userInUserList = userList.find(u => u.identity.id === user.identity.id);
@@ -246,6 +238,7 @@ async function updateGuilds(id) {
             }
     } else {
         clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+        return null;    
     }
     saveUsers();
     return user.guilds;
@@ -261,11 +254,17 @@ async function updateIdentity(id) {
     if (user.auth) {
         const identity = await discordAuth.getUserIdentity(user.auth);
         if(identity) {
+            // Check Rate limit by checking if identity.message exists
+            if(typeof identity.message !== "undefined") {
+                clog.warn(`Erreur lors de la mise à jour de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id}) : ${identity.message}`);
+                return null;
+            }
             user.identity = identity;
             clog.log(`Mise à jour réussie de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})`);
         }
         else {
             clog.warn(`Erreur lors de la mise à jour de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})`);
+            return null
         }
         // Update the user in the list
         const userInUserList = userList.find(u => u.identity.id === user.identity.id);
@@ -275,6 +274,7 @@ async function updateIdentity(id) {
         }
     } else {
         clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
+        return null;
     }
     saveUsers();
     return user.identity;
@@ -525,7 +525,7 @@ module.exports = {
     removeToken, 
     getSimpleUsers, 
     getSimpleUser,
-    refreshUserInformation,
+    updateCredientials,
     refreshAllUserInformation,
     updateGuilds,
     updateIdentity

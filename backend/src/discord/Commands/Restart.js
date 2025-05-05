@@ -14,12 +14,12 @@ const command = new Command("restart", "Redémarre le bot", (client, interaction
     }
     const reason = interaction.options.getString("reason")
     restart(reason)
-    const embed = new Embed()
+    const embed = new Embed(interaction)
     embed.setColor(150, 20, 20)
     embed.setTitle('Redémarrage')
     embed.setDescription("Veuillez patientez, le bot va redémarrer dans un instant ! :arrows_counterclockwise:")
     embed.addField('Raison', reason)
-    embed.send(interaction)
+    embed.send()
 },
 [{type: "STRING", name: "reason", description: "Raison du redémarrage", required: true}]
 )

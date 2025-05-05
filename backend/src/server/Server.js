@@ -42,6 +42,7 @@ function init() {
             for(var guild of discordBot.getGuilds().keys()) {
                 const player = players.getPlayer(guild)
                 if(player) {
+                    if(!player.isConnected()) continue;
                     io.to(player.guildId).emit("/PLAYER/UPDATE", player.getState())
                     wlog.log("Envoi de l'état du player de la guilde : " + player.guildId + " à tous les utilisateurs connectés")
                 }
@@ -68,8 +69,8 @@ function init() {
 
         // Make sure Discord Bot is loaded and make an interruption until it is loaded
         while(!discordBot.getClient().isReady()) {
-            wlog.warn("Attente de traitement : "+ socket.id + " : Le bot Discord n'est pas encore chargé, attente de 1 seconde...")
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            wlog.warn("Attente de traitement : "+ socket.id + " : Le bot Discord n'est pas encore chargé, attente de 3 seconde... (Avoid Rate Limit)")
+            await new Promise(resolve => setTimeout(resolve, 3000))
         }
 
         wlog.log(`Connexion d'un client : ${socket.id}`)
@@ -152,8 +153,13 @@ function init() {
                 return
             }
 
-            await users.updateGuilds(socketUser.identity.id)
-            await users.updateIdentity(socketUser.identity.id)
+            if (!(await users.updateGuilds(socketUser.identity.id)) || !(await users.updateIdentity(socketUser.identity.id))) {
+                wlog.error("Erreur lors de la mise à jour des informations de l'utilisateur : " + socketUser.identity.id);
+                socket.emit("UPDATE_ERROR", "Error updating user information");
+                wlog.log("Déconnexion de l'utilisateur : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)    
+                socket.disconnect();
+                return;
+            }
         }
 
         socketUser = users.getUserByToken(token)
@@ -220,14 +226,14 @@ function init() {
 
             // PLAYERS
 
+            //CHECKED : 03/05/2025
             IORequest("/PLAYER/PREVIOUS/LIST", (guildId) => {   
                 if(!checkUserGuild(socketUser, guildId)) return
                 const list = new List(guildId)
                 IOAnswer("/PLAYER/PREVIOUS/LIST", list.getPrevious())
             })
 
-            //TODO: Faire les autres reqêtes sur la liste
-
+            // ChECKED : 03/05/2025
             IORequest("/PLAYER/JOIN", (guildId) => {
                 if(!checkUserGuild(socketUser, guildId)) return
                 wlog.log("L'utilisateur '" + socketUser.identity.username + "' rejoint la liste d'écoute du player de la guilde : " + guildId)
@@ -238,37 +244,49 @@ function init() {
                     }
                 })
                 socket.join(guildId)
-                IOAnswer("PLAYER_STATE", true)
+                IOAnswer("/PLAYER/JOIN", true)
+                process.emit("PLAYERS_UPDATE")
             })
 
-            IORequest("/PLAYER/STATE", (guildId) => {
-                handlePlayerAction(guildId, async (player) => await player.getState(), "/PLAYER/STATE");
+            // CHECKED : 03/05/2025
+            IORequest("/PLAYER/STATE", async (guildId) => {
+                const player = await verifyPlayerAction(guildId)
+                if(!player) return IOAnswer("/PLAYER/STATE", false)
+                IOAnswer("/PLAYER/STATE", await player.getState())
             })
- 
+            
+
+            // CHECKED : 03/05/2025
             IORequest("/PLAYER/PAUSE", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.pause(), "/PLAYER/PAUSE");
             });
 
+            
+            // CHECKED : 03/05/2025
             IORequest("/PLAYER/BACKWARD", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.previous(), "/PLAYER/BACKWARD");
             });
 
+            
+            // CHECKED : 03/05/2025
             IORequest("/PLAYER/FORWARD", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.skip(), "/PLAYER/FORWARD");
             });
 
+              // CHECKED : 03/05/2025
             IORequest("/PLAYER/LOOP", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.setLoop(), "/PLAYER/LOOP");
             });
 
+              // CHECKED : 03/05/2025
             IORequest("/PLAYER/SHUFFLE", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.setShuffle(), "/PLAYER/SHUFFLE");
             });
-
+              // CHECKED : 03/05/2025
             IORequest("/PLAYER/DISCONNECT", (guildId) => {
                 handlePlayerAction(guildId, (player) => player.leave(), "/PLAYER/DISCONNECT");
             });
-
+              // CHECKED : 03/05/2025
             IORequest("/PLAYER/CHANNEL/CHANGE", (guildId) => {
                 handlePlayerAction(guildId, (player) => {
                     const channel = getUserChannel()
@@ -280,6 +298,7 @@ function init() {
                 }, "/PLAYER/CHANNEL/CHANGE");
             });
 
+            // CHECKED : 03/05/2025
             IORequest("/PLAYER/SEEK", (data) => {
                 if(!data) return IOAnswer("/PLAYER/SEEK", false)
                 const {guildId, time} = data
@@ -296,14 +315,17 @@ function init() {
                 }, "/PLAYER/SEEK");
             });
 
+            // CHECKED : 04/05/2025            
             IORequest("/QUEUE/PLAY/NOW", (data) => {
                 if(!data) return IOAnswer("/QUEUE/PLAY/NOW", false)
-                const {guildId, song} = data
-                if(!song) return IOAnswer("/QUEUE/PLAY/NOW", false)
+                const {guildId, index, listType} = data
+                if(!index) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(!guildId) return IOAnswer("/QUEUE/PLAY/NOW", false)
+                if(!listType) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(!checkUserGuild(socketUser, guildId)) return
                 const player = new Player(guildId)
                 if(!connectToPlayer(guildId, player)) return IOAnswer("/QUEUE/PLAY", false)
+                var song;
                 if(listType == "previous") {
                     const previous = player.queue.getPrevious()
                     song = previous[index]
@@ -311,11 +333,13 @@ function init() {
                     const next = player.queue.getNext()
                     song = next[index]
                 }
-                if(!song) return IOAnswer("/QUEUE/PLAY", false)
-                player.add(song)
+                if(!song) return IOAnswer("/QUEUE/PLAY/NOW", false)
+                if(listType == "next") player.queue.removeNextByIndex(index)
+                player.play(song)
                 IOAnswer("/QUEUE/PLAY/NOW", true)
             })
 
+            // CHECKED : 04/05/2025
             IORequest("/QUEUE/NEXT/DELETE", (data) => {
                 if(!data) return IOAnswer("/QUEUE/NEXT/DELETE", false)
                 const {guildId, index} = data
@@ -325,13 +349,15 @@ function init() {
                     const next = player.queue.getNext()
                     if(!next[index]) return IOAnswer("/QUEUE/NEXT/DELETE", false);
                     player.queue.removeNextByIndex(index)
-                })
+                }, "/QUEUE/NEXT/DELETE")
             })
 
+             // CHECKED : 04/05/2025
             IORequest("/QUEUE/NEXT/DELETEALL", (guildId) => {
-                handlePlayerAction(guildId, (player) => player.queue.clearNext())
+                handlePlayerAction(guildId, (player) => player.queue.clearNext(), "/QUEUE/NEXT/DELETEALL")
             })
 
+             // CHECKED : 04/05/2025
             IORequest("/QUEUE/NEXT/MOVE", (data) => {
                 if(!data) return IOAnswer("/QUEUE/NEXT/MOVE", false)
                 const {guildId, index, newIndex} = data
@@ -342,7 +368,7 @@ function init() {
                     const next = player.queue.getNext()
                     if(!next[index]) return IOAnswer("/QUEUE/NEXT/MOVE", false);
                     player.queue.moveNext(index, newIndex)
-                })
+                }, "/QUEUE/NEXT/MOVE")
             })
 
             // SEARCH
@@ -352,10 +378,14 @@ function init() {
                 IOAnswer("/SEARCH", await Finder.search(query, true)) 
             })
 
+            // CHECKED : 03/05/2025
             IORequest("/SEARCH/PLAY", async (data) => {
                 if(!data) return IOAnswer("/SEARCH/PLAY", false)
-                const {guildId, song, now} = data
+                var {guildId, song, now} = data
                 if(!song) return IOAnswer("/SEARCH/PLAY", false)
+                if(typeof song == "string") {
+                    song = JSON.parse(song)
+                }
                 if(!guildId) return IOAnswer("/SEARCH/PLAY", false)
                 if(!checkUserGuild(socketUser, guildId)) return
                 const player = new Player(guildId)
@@ -366,6 +396,20 @@ function init() {
                     player.add(song)
                 }
                 IOAnswer("/SEARCH/PLAY", true)
+            })
+
+            // CHECKED : 05/05/2025
+            IORequest("/SEARCH/PLAYLIST", async (data) => {
+                if(!data) return IOAnswer("/SEARCH/PLAYLIST", false)
+                const {url, now, guildId} = data
+                if(!url) return IOAnswer("/SEARCH/PLAYLIST", false)
+                if(!guildId) return IOAnswer("/SEARCH/PLAYLIST", false)
+                const playlist = await Finder.search(url, true, "PLAYLIST")
+                if(!playlist) return IOAnswer("/SEARCH/PLAYLIST", false)
+                const player = new Player(guildId)
+                if(!connectToPlayer(guildId, player)) return IOAnswer("/SEARCH/PLAYLIST", false)
+                player.readPlaylist(playlist, now)
+                IOAnswer("/SEARCH/PLAYLIST", true)
             })
 
             
@@ -446,7 +490,8 @@ function init() {
                 IOAnswer("/PLAYLISTS/REMOVE_SONG", true)
             })
 
-            IORequest("/PLAYLISTS/PLAY", (data) => {
+            // CHECKED : 05/05/2025
+            IORequest("/PLAYLISTS/PLAY", async (data) => {
                 if(!data) return IOAnswer("/PLAYLISTS/PLAY", false)
                 const {name, guildId, now} = data
                 if(!name || !guildId) return IOAnswer("/PLAYLISTS/PLAY", false)
@@ -454,7 +499,7 @@ function init() {
                 const playlist = playlists.getPlaylistOfUser(socketUser.identity.id, name)
                 if(!playlist) return IOAnswer("/PLAYLISTS/PLAY", false)
                 const player = new Player(guildId)
-                if(!connectToPlayer(guildId, player)) return IOAnswer("/PLAYLISTS/PLAY", false)
+                if(!await connectToPlayer(guildId, player)) return IOAnswer("/PLAYLISTS/PLAY", false)
                 player.readPlaylist(playlist, now)
                 IOAnswer("/PLAYLISTS/PLAY", true)
             })
@@ -575,6 +620,7 @@ function init() {
                 const member = membersVoices.get(socketUser.identity.id)
                 if(member) {
                     const channelId = member.channelId
+                    const guildId = member.guildId
                     const channel = discordBot.getChannel(guildId, channelId)
                     if(!channel) {
                         wlog.warn("Le channel vocal n'existe pas : " + channelId)
@@ -597,6 +643,17 @@ function init() {
                 if(!channel) return false
                 player.join(channel)
                 return true
+            }
+
+            async function verifyPlayerAction(guildId) {
+                if (!checkUserGuild(socketUser, guildId)) return null;
+                const player = players.getPlayer(guildId);
+                if (player) {
+                    return player;
+                } else {
+                    wlog.warn(`Le player de la guilde : ${guildId} n'existe pas`);
+                    return null;
+                }
             }
 
 
@@ -622,20 +679,22 @@ function init() {
                 return true
             }
 
-               /**
+                    /**
                  * @param {function(Player)} action - The action to perform on the player.
                  */
-               async function handlePlayerAction(guildId, action, actionName) {
+            async function handlePlayerAction(guildId, action, actionName) {
                 if (!checkUserGuild(socketUser, guildId)) return;
-                const player = players.getPlayer(guildId);
+                    const player = players.getPlayer(guildId);
                 if (player) {
-                    await action(player);
-                    wlog.log(`L'utilisateur '${socketUser.identity.username}' effectue l'action '${actionName}' sur le player de la guilde : ${guildId}`);
-                    IOAnswer(actionName, true);
+                        await action(player);
+                        wlog.log(`L'utilisateur '${socketUser.identity.username}' effectue l'action '${actionName}' sur le player de la guilde : ${guildId}`);
+                        IOAnswer(actionName, true);
                 } else {
-                    wlog.warn(`Le player de la guilde : ${guildId} n'existe pas`);
-                    IOAnswer(actionName, false);
+                        wlog.warn(`Le player de la guilde : ${guildId} n'existe pas`);
+                        IOAnswer(actionName, false);
                 }
+
+               
             }
             
         }
@@ -683,13 +742,12 @@ function init() {
         wlog.step.end("server_init")
     })
 
-    function AdminRequest(GRname, GRvalue) {
-
-        io.to("ADMIN").emit("ALWAYS/" + GRname, GRvalue)
-    
-    }
-
     function addGuildConnectedUser(user, guilds) {
+        // Check if guilds is iterable
+        if(!guilds || !guilds[Symbol.iterator]) {
+            wlog.warn("Les guilds ne sont pas itérables")
+            return
+        }
        for(var guild of guilds) {
             if(!guildConnectedUsers.has(guild)) {
                 guildConnectedUsers.set(guild.id, new Array())

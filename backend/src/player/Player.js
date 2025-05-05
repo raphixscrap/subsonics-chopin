@@ -1,6 +1,7 @@
 const { joinVoiceChannel, getVoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayerStatus, StreamType, createAudioResource } = require('@discordjs/voice');
 const {List} = require('./List')
 const {LogType} = require("loguix");
+const songCheck = require('./SongCheck')
 const ffmpeg = require('fluent-ffmpeg')
 const fs = require('fs')
 const { PassThrough } = require('stream');
@@ -91,6 +92,7 @@ class Player {
         });
         
        this.player.on(AudioPlayerStatus.Idle, () => {
+        if(this.checkConnection()) return
             // Si la musique est en boucle, on relance la musique
             if(this.loop) {
                 this.play(this.queue.current)
@@ -106,7 +108,7 @@ class Player {
         });
 
         this.player.on(AudioPlayerStatus.Playing, () => {
-        
+            if(this.checkConnection()) return
             plog.log(`GUILD : ${this.guildId} - Le player est en train de jouer le contenu suivant : ${this.queue.current.title}`);
             Activity.setMusicActivity(this.queue.current.title, this.queue.current.author, this.queue.current.thumbnail)
             process.emit("PLAYERS_UPDATE")
@@ -140,7 +142,8 @@ class Player {
             duration: this.getDuration(),
             playerState: playerStatus,
             connectionState: connectionStatus,
-            channelId: this.channelId
+            channelId: this.channelId,
+            guildId: this.guildId,
         }
         return state
     }
@@ -168,6 +171,7 @@ class Player {
     }
 
     async play(song) {
+        if(!songCheck.checkSong(song)) return
         if(this.checkConnection()) return
         if(this.queue.current != null) {
             this.player.stop()
@@ -202,7 +206,7 @@ class Player {
     }
 
     async add(song) {
-        if(this.player.state.status == AudioPlayerStatus.Idle && this.queue.current === null && this.queue.next.length === 0) {
+        if(this.player?.state?.status == AudioPlayerStatus.Idle && this.queue.current === null && this.queue.next.length === 0) {
             this.play(song)
             return
         } 
@@ -212,15 +216,14 @@ class Player {
     }
 
     async readPlaylist(playlist, now) {
-        if(this.player.state.status == AudioPlayerStatus.Idle && this.queue.current === null && this.queue.next.length === 0) {
-            this.play(playlist.songs[0])
-        } 
-        if(now) {
+        if(this.player?.state?.status == AudioPlayerStatus.Idle && this.queue.current === null && this.queue.next.length === 0) {
             this.play(playlist.songs[0])
             this.queue.addNextPlaylist(playlist, true)
-        } else {
-            this.queue.addNextPlaylist(playlist)
-        }
+            return
+        } 
+        if(now) this.play(playlist.songs[0])
+         this.queue.addNextPlaylist(playlist, now)
+        
         plog.log(`GUILD : ${this.guildId} - La playlist a été ajoutée à la liste de lecture : ${playlist.title}`)
     }
 
@@ -229,13 +232,15 @@ class Player {
         if(this.player.state.status == AudioPlayerStatus.Paused) {
             this.player.unpause()
             plog.log(`GUILD : ${this.guildId} - La musique a été reprise`)
+            process.emit("PLAYERS_UPDATE")
             return false
         } else {
             this.player.pause()
             plog.log(`GUILD : ${this.guildId} - La musique a été mise en pause`)
+            process.emit("PLAYERS_UPDATE")
             return true
         }
-        process.emit("PLAYERS_UPDATE")
+       
     }
 
     async leave() {
@@ -260,7 +265,7 @@ class Player {
     }
 
     async setDuration(duration) {
-
+        //FIXME: SET DURATION FONCTIONNE TRES LENTEMENT
         if (this.checkConnection()) return;
         if (this.queue.current == null) return;
         if (this.currentResource == null) return;
