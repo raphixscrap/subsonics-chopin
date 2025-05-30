@@ -2,7 +2,7 @@ const { LogType } = require('loguix');
 const clog = new LogType("YoutubeInformation");
 const { Song } = require('../player/Song');
 const { Playlist } = require('../playlists/Playlist');
-const { getReadableDuration } = require('../utils/TimeConverter');
+const { getReadableDuration, getSecondsDuration } = require('../utils/TimeConverter');
 const ytsr = require('@distube/ytsr');
 const ytfps = require('ytfps');
 
@@ -110,4 +110,26 @@ async function getPlaylist(url) {
     }
 }
 
-module.exports = { getQuery, getVideo, getPlaylist };
+async function getSecondsFromUrl(url) {
+    const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/|music\.youtube\.com\/)(?:watch\?v=)?([a-zA-Z0-9_-]{11})/);
+    if (videoId === null) {
+        clog.error("Impossible de récupérer l'identifiant de la vidéo YouTube à partir de l'URL");
+        return null;
+    }
+    try {
+        const searchResults = await ytsr(videoId[1], { limit: 1 });
+        const video = searchResults.items.find(item => item.type === 'video');
+        console.log(video);
+        if (video) {
+            return getSecondsDuration(video.duration); // Convert seconds to milliseconds
+        } else {
+            clog.error("Impossible de récupérer la vidéo YouTube à partir de l'identifiant");
+            return null;
+        }
+    } catch (error) {
+        clog.error('Erreur lors de la recherche de la vidéo YouTube:' + error);
+        return null;
+    }
+}
+
+module.exports = { getQuery, getVideo, getPlaylist, getSecondsFromUrl };

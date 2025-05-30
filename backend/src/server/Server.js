@@ -15,10 +15,18 @@ const Finder = require("../player/Finder")
 const fs = require("fs")
 const {__glob} = require("../utils/GlobalVars")
 const playlists = require("../playlists/PlaylistManager")
+const history = require("../playlists/History")
+const lyrics = require("../lyrics/Lyrics")
+const mediaBase = require("../discord/MediaBase")
+const googleApis = require("../playlists/Google/OAuth2")
+const youtubeApi = require("../playlists/Google/YoutubeList")
 
 const configuration = require("../utils/Database/Configuration")
 const { List } = require('../player/List')
 const { restart } = require('../utils/Maintenance')
+const { isAudioFile } = require('../utils/AudioBufferCheck')
+const { Song } = require('../player/Song')
+const { getMediaInformationFromUrl } = require('../media/MediaInformation')
 
 const allConnectedUsers = new Array()
 const guildConnectedUsers = new Map()
@@ -205,9 +213,13 @@ function init() {
                     identity: socketUser.identity,
                     guilds: guildPresents, 
                     labels: socketUser.labels,
-                   
+                    history: history.getPersonalHistory(socketUser.identity.id),
                 })
                 wlog.log("Envoi des informations Discord de '" + socketUser.identity.id + "' à '" + socket.id + "'" )
+            })
+
+            IORequest("/USER/HISTORY", () => {
+                IOAnswer("/USER/HISTORY", history.getPersonalHistory(socketUser.identity.id))
             })
 
             //CHECKED : 24/04/2025
@@ -215,7 +227,6 @@ function init() {
                 socketUser.removeToken(token)
                 socket.disconnect()
             })
-
 
             // CHECKED : 24/04/2025 
             IORequest("/USERS/LIST", (guildId) => {
@@ -225,6 +236,28 @@ function init() {
             })
 
             // PLAYERS
+
+            IORequest("/PLAYER/LYRICS", async (guildId) => {
+                if(!checkUserGuild(socketUser, guildId)) return
+                const player = await verifyPlayerAction(guildId)
+                if(!player) return IOAnswer("/PLAYER/LYRICS", false)
+                if(!player.queue?.current) {
+                    wlog.warn("Le player de la guilde : " + guildId + " n'a pas de musique en cours")
+                    IOAnswer("/PLAYER/LYRICS", false)
+                    return
+                }
+                const song = player.queue.current
+                const lyricsData = await lyrics.getLyrics(song.title + " " + song.author)
+                console.log(lyricsData)
+                if(!lyricsData) {
+                    wlog.warn("Aucune lyrics trouvée pour la musique : " + song.title + " de l'artiste : " + song.author)
+                    IOAnswer("/PLAYER/LYRICS", false)
+                    return
+                }
+                IOAnswer("/PLAYER/LYRICS", lyricsData)
+            })
+
+
 
             //CHECKED : 03/05/2025
             IORequest("/PLAYER/PREVIOUS/LIST", (guildId) => {   
@@ -316,9 +349,9 @@ function init() {
             });
 
             // CHECKED : 04/05/2025            
-            IORequest("/QUEUE/PLAY/NOW", (data) => {
+            IORequest("/QUEUE/PLAY", (data) => {
                 if(!data) return IOAnswer("/QUEUE/PLAY/NOW", false)
-                const {guildId, index, listType} = data
+                const {guildId, index, listType, now} = data
                 if(!index) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(!guildId) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(!listType) return IOAnswer("/QUEUE/PLAY/NOW", false)
@@ -335,7 +368,12 @@ function init() {
                 }
                 if(!song) return IOAnswer("/QUEUE/PLAY/NOW", false)
                 if(listType == "next") player.queue.removeNextByIndex(index)
-                player.play(song)
+                if(now) {
+                    player.play(song)
+                } else {
+                    player.add(song)
+                }
+                history.addToPersonalHistory(socketUser.identity.id, song)
                 IOAnswer("/QUEUE/PLAY/NOW", true)
             })
 
@@ -395,6 +433,7 @@ function init() {
                 } else {
                     player.add(song)
                 }
+                history.addToPersonalHistory(socketUser.identity.id, song)
                 IOAnswer("/SEARCH/PLAY", true)
             })
 
@@ -412,8 +451,71 @@ function init() {
                 IOAnswer("/SEARCH/PLAYLIST", true)
             })
 
-            
+            IORequest("/SEARCH/LYRICS", async (name) => {
+                if(!name) return IOAnswer("/SEARCH/LYRICS", false)
+                const lyricsData = await lyrics.getLyrics(name)
+                if(!lyricsData) return IOAnswer("/SEARCH/LYRICS", false)
+                IOAnswer("/SEARCH/LYRICS", lyricsData)
+            })
+
+            // UPLOAD
+
+            // CHECKED : 29/05/2025
+
+            IORequest("/UPLOAD/FILE", async (data) => {
+                if(!data) return IOAnswer("/UPLOAD/FILE", false)
+                if(!data.name) return IOAnswer("/UPLOAD/FILE", false)
+                const file = data.file
+                // Check wav or mp3
+                if(isAudioFile(file) == false) {
+                    wlog.warn("Le fichier envoyé n'est pas un fichier audio valide (MP3/WAV)")
+                    return IOAnswer("/UPLOAD/FILE", false)
+                }
+                const url = await mediaBase.postMedia(data)
+                if(!url) return IOAnswer("/UPLOAD/FILE", false)
+                IOAnswer("/UPLOAD/FILE", {"url": url, "name": data.name})
+            })
+
+            // CHECKED : 29/05/2025
+            IORequest("/UPLOAD/FILE/GET_SONG", async (data) => {
+                if(!data) return IOAnswer("/UPLOAD/FILE/GET_SONG", false)
+                const {name, url} = data
+                if(!url) return IOAnswer("/UPLOAD/FILE/GET_SONG", false)
+                if(!name) return IOAnswer("/UPLOAD/FILE/GET_SONG", false)
+                const song = new Song()
+                if(!song) return IOAnswer("/UPLOAD/FILE/GET_SONG", false)
+                await getMediaInformationFromUrl(song, url)
+                song.type = "attachment"
+                song.author = socketUser.identity.username
+                song.authorId = socketUser.identity.id
+                song.title = name
+                song.url = url
+                IOAnswer("/UPLOAD/FILE/GET_SONG", song)
+            })
+
+            // GOOGLE API
+
+            IORequest("/GOOGLE/AUTH", () => {
+                IOAnswer("/GOOGLE/AUTH", googleApis.createAuthUrl(socketUser.identity.id))
+            })
+
+            IORequest("/GOOGLE/YOUTUBE/ADD_PLAYLIST", async (code) => {
+                if(!code) {
+                    IOAnswer("/GOOGLE/YOUTUBE/ADD_PLAYLIST", false)
+                }
+                const token = await googleApis.getAuthorization(socketUser.identity.id, code)
+                if(!token) {
+                    IOAnswer("/GOOGLE/YOUTUBE/ADD_PLAYLIST", false)
+                    return
+                }
+                playlists.processYoutubeData(socketUser.identity.id, await youtubeApi.getYoutubePlaylists(socketUser.identity.id))
+                IOAnswer("/GOOGLE/YOUTUBE/ADD_PLAYLIST", true)
+            })
+
+
             // PLAYLISTS
+
+            
 
             // CHECKED : 30/04/2025
             IORequest("/PLAYLISTS/CREATE", async (data) => {

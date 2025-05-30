@@ -6,6 +6,10 @@ const {LogType} = require('loguix');
 const clog = new LogType("PlaylistManager");
 const Finder = require('../player/Finder');
 const spotify = require('../media/SpotifyInformation');
+const { getYoutubePlaylistSongs } = require('./Google/YoutubeList');
+const { auth } = require('googleapis/build/src/apis/abusiveexperiencereport');
+const { getReadableDuration } = require('../utils/TimeConverter');
+const { getSecondsFromUrl } = require('../media/YoutubeInformation');
 
 const playlistDB = new Database("Playlists", __glob.PLAYLISTFILE, {});
 
@@ -182,6 +186,84 @@ function removeSong(id, playlistName, songId) {
     clog.log(`Suppression de la chanson ${songId} de la playlist ${playlistName} pour l'utilisateur ${id}`);
 }
 
+async function processYoutubeData(userId, data) {
+    if (!data || data.length === 0) {
+        clog.warn(`Aucune donnée YouTube trouvée pour l'utilisateur ${userId}`);
+        return [];
+    }
+
+    const playlists = [];
+     for (const item of data) {
+        if (item.snippet && item.contentDetails) {
+            const playlist = new Playlist();
+            playlist.id = item.id;
+            playlist.title = item.snippet.title;
+            playlist.url = `https://www.youtube.com/playlist?list=${item.id}`;
+            playlist.description = item.snippet.description || "Aucune description disponible";
+            playlist.author = item.snippet.channelTitle;
+            playlist.thumbnail = item.snippet.thumbnails.default.url;
+            playlist.authorId = `https://www.youtube.com/channel/${item.snippet.channelId}`;
+            playlist.songs = []; // You can fetch songs later if needed
+            await getYoutubePlaylistSongs(item.id, userId).then(songsData => {
+                if (songsData && songsData.data && songsData.data.items) {
+                    playlist.songs = songsData.data.items.map(song => ({
+                        id: song.snippet.resourceId.videoId,
+                        title: song.snippet.title,
+                        author: song.snippet.videoOwnerChannelTitle,
+                        authorId: `https://www.youtube.com/channel/${song.snippet.videoOwnerChannelId}`,
+                        url: `https://www.youtube.com/watch?v=${song.snippet.resourceId.videoId}`,
+                        thumbnail: song.snippet?.thumbnails?.default?.url || "https://radomisol.fr/wp-content/uploads/2016/08/cropped-note-radomisol-musique.png",
+                    }));
+                    // Add readduration for every items in songs
+
+                } else {
+                    clog.warn(`Aucune chanson trouvée pour la playlist ${item.id}`);
+                }
+            }).catch(err => {
+                clog.error(`Erreur lors de la récupération des chansons pour la playlist ${item.id}:`, err);
+            });
+            for (const song of playlist.songs) {
+                // If authorId is not defined, delete the song
+                if (song.authorId == "https://www.youtube.com/channel/undefined") {
+                    clog.warn(`L'auteur de la chanson ${song.title} (${song.id}) n'est pas défini. Suppression de la chanson.`);
+                    playlist.songs.splice(playlist.songs.indexOf(song), 1);
+                    continue; // Skip this song
+                }
+                song.duration = await getSecondsFromUrl(song.url);
+                if (song.duration === null) {
+                    clog.warn(`Impossible de récupérer la durée de la chanson ${song.title} (${song.id})`);
+                    song.duration = 0; // Set to 0 if duration cannot be fetched
+                } else {
+                    song.readduration = getReadableDuration(song.duration);
+                    playlist.duration += song.duration; // Initialize duration if not set
+                }
+                
+            }
+          
+            playlist.readduration = getReadableDuration(playlist.duration);
+            playlist.type = "youtube";
+            playlists.push(playlist);
+        } else {
+            clog.warn(`Données YouTube manquantes pour l'élément ${item.id}`);
+        }
+    };
+
+    clog.log(`Traitement des données YouTube pour l'utilisateur ${userId} terminé. Nombre de playlists trouvées : ${playlists.length}`);
+    // Save the playlists to the user's playlist collection
+    const userPlaylists = getPlaylistsOfUser(userId);
+    // Remove existing playlists with the same IDs to avoid duplicates
+    for (const playlist of playlists) {
+        const existingIndex = userPlaylists.findIndex(p => p.id === playlist.id);
+        if (existingIndex !== -1) {
+            userPlaylists.splice(existingIndex, 1); // Remove existing playlist with the same ID
+        }
+    }
+    userPlaylists.push(...playlists);
+    playlistDB.save();
+    clog.log(`Playlists ajoutées pour l'utilisateur ${userId}. Nombre total de playlists : ${userPlaylists.length}`);
+    return playlists;
+}
+
 module.exports = {
     getPlaylistsOfUser,
     getPlaylistOfUser,
@@ -191,5 +273,6 @@ module.exports = {
     copyPlaylist,
     renamePlaylist,
     addSong,
-    removeSong
+    removeSong,
+    processYoutubeData
 }

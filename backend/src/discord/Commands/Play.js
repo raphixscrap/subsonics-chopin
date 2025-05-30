@@ -4,6 +4,7 @@ const { Player } = require("../../player/Player");
 const Finder = require("../../player/Finder");
 const { Playlist } = require("../../playlists/Playlist");
 const spotify = require("../../media/SpotifyInformation");
+const history = require("../../playlists/History");
 
 const command = new Command("play", "Jouer une musique à partir d'un lien dans un salon vocal", async (client, interaction) => {
 
@@ -75,6 +76,8 @@ const command = new Command("play", "Jouer une musique à partir d'un lien dans 
             } else {
                 player.add(song)
             }
+
+            history.addToPersonalHistory(interaction.user.id, song)
                 
         }
 

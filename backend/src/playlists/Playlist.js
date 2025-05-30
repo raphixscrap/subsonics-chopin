@@ -11,6 +11,7 @@ class Playlist {
     duration = 0;
     readduration;
     description;
+    form = "PLAYLIST"; 
     type;
     constructor(title, url, author, authorId, songs, thumbnail, duration, readduration, description) {
         this.title = title;

@@ -12,6 +12,8 @@ const __glob = {
     PREVIOUSFILE: root + path.sep + "data" + path.sep + "previous.json",
     USERFILE: root + path.sep + "data" + path.sep + "users.json",
     PLAYLISTFILE: root + path.sep + "data" + path.sep + "playlists.json",
+    HISTORY_DB: root + path.sep + "data" + path.sep + "history.json",
+    MEDIA_DB: root + path.sep + "data" + path.sep + "media.json",
 }
 
 module.exports = {__glob}

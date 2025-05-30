@@ -5,7 +5,6 @@
  */
 
 
-const { LogType } = require('loguix');
 const { __glob } = require("./utils/GlobalVars")
 require("loguix").setup(__glob.LOGS, __glob.PACKAGEINFO)
 const config = require("./utils/Database/Configuration")
@@ -20,7 +19,7 @@ setup();
 
 async function setup() {
     const DiscordBot = require("./discord/Bot")
-    DiscordBot.init()
+    await DiscordBot.init()
     const Server = require("./server/Server")
-    Server.init()
+    await Server.init()
 }

@@ -2,6 +2,7 @@ const {Command} = require('../Command');
 const {Embed, EmbedError} = require('../Embed');
 const { Player } = require('../../player/Player');
 const { Song } = require('../../player/Song');
+const history = require('../../playlists/History'); 
 
 const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal", async (client, interaction) => {
 
@@ -34,6 +35,8 @@ const command = new Command("media", "Lire un média MP3/WAV dans un salon vocal
         embed.setTitle('**Ajout à liste de lecture**')
         
     }
+
+    history.addToPersonalHistory(interaction.user.id, song)
         
     embed.setDescription('**Titre : **' + song.title)
     embed.addField('**Durée : **', song.readduration)

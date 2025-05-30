@@ -13,6 +13,7 @@ class Song {
     thumbnail = "https://radomisol.fr/wp-content/uploads/2016/08/cropped-note-radomisol-musique.png" ;
     duration;
     readduration;
+    form = "SONG"; 
     type;
     userAddedId; 
 

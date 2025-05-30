@@ -9,6 +9,7 @@ const { Player } = require("../player/Player")
 const {refreshAllUserInformation} = require("../server/auth/User")
 
 const dlog = new LogType("Discord")
+dlog.log("Initialisation du Bot Discord")   
 
 const membersVoices = new Map()
 const timers = new Map()

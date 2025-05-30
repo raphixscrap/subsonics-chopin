@@ -14,7 +14,10 @@ const config = new Database("config", __glob.DATA  + path.sep + "config.json", {
         contact : ""
     },
     api: {
-        youtube: "",
+        youtube: {
+            clientId : "" ,
+            clientSecret: ""
+        },
         spotify: {
             clientId: "",
             clientSecret: ""
@@ -22,6 +25,10 @@ const config = new Database("config", __glob.DATA  + path.sep + "config.json", {
     },
     website: "",
     server_port: 5000,
+    media: {
+        guildId: "",
+        channelId: "",
+    }
 })
 
 function getToken() {
@@ -36,8 +43,12 @@ function getReportContact() {
     return config.data.report.contact
 }   
 
-function getYoutubeApiKey() {
-    return config.data.api.youtube
+function getYoutubeApiClientId() {
+    return config.data.api.youtube.clientId
+}
+
+function getYoutubeApiClientSecret() {
+    return config.data.api.youtube.clientSecret
 }
 
 function getSpotifyClientId() {
@@ -61,9 +72,31 @@ function getClientSecret() {
     return config.data.client_secret
 }
 
+function getMediaGuildId() {
+    return config.data.media.guildId
+}
+
+function getMediaChannelId() {
+    return config.data.media.channelId
+}
+
 if(getToken() == "") {
     clog.error("Impossible de démarrer sans token valide")
     process.exit(1)
 }
 
-module.exports = {getToken, getClientSecret, getReportChannel, getReportContact, getYoutubeApiKey, getSpotifyClientId, getSpotifyClientSecret, getWebsiteLink, getPort}
+module.exports = {
+    getToken,
+    getClientSecret,
+    getReportChannel,
+    getReportContact,
+    getYoutubeApiClientId,
+    getYoutubeApiClientSecret,
+    getSpotifyClientId,
+    getSpotifyClientSecret,
+    getWebsiteLink,
+    getPort,
+    getMediaGuildId,
+    getMediaChannelId
+    
+}
