@@ -6,7 +6,7 @@ const { LogType } = require("loguix")
 const config = require("../utils/Database/Configuration")
 const metric = require("webmetrik") 
 const { Player } = require("../player/Player")
-const {refreshAllUserInformation, clearNeedUpdateForUsers} = require("../server/auth/User")
+const {refreshAllUserInformation} = require("../server/auth/User")
 
 const dlog = new LogType("Discord")
 const glog = new LogType("GuildUpdater")
@@ -57,26 +57,7 @@ function init() {
         
     client.once('ready', async () => {
     dlog.log("Connexion au Bot Discord réussi ! Connecté en tant que : " + client.user.tag)
-
-    for (const guild of client.guilds.cache.values()) {
-        const missingPermissions = checkRequiredPermission(guild.members.me)
-        if (missingPermissions.length > 0) {
-            dlog.error("Le bot n'a pas les permissions nécessaires pour rejoindre la guilde : " + guild.name)
-            dlog.error("Permissions manquantes : " + missingPermissions.join(", "))
-            await guild.leave()
-            continue
-        }
-
-        var guildMember = await guild.members.fetch()
-        guildMember = guildMember.map(member => member.user.id)
-        guilds.set(guild.id, {
-            id: guild.id,
-            name: guild.name,
-            members: guildMember,
-        })
-        glog.log("Guilde instanciée (démarrage) : " + guild.name + " (" + guild.id + ")")
-    }
-
+    await refreshGuilds()
     await refreshAllUserInformation()
 
     const Activity = require("./Activity")
@@ -120,36 +101,37 @@ function init() {
         }
     })
 
+    client.on("guildMemberAdd", async (member) => {
+        dlog.log("Nouveau membre dans la guilde : " + member.guild.name + " (" + member.guild.id + ") - Membre : " + member.user.username + " (" + member.user.id + ")")
+        await refreshGuilds()
+        process.emit("USERS_UPDATE")
+    })
+
+    client.on("guildMemberRemove", async (member) => {
+        dlog.log("Membre quitté la guilde : " + member.guild.name + " (" + member.guild.id + ") - Membre : " + member.user.username + " (" + member.user.id + ")")
+        await refreshGuilds()   
+        membersVoices.delete(member.user.id)
+        process.emit("USERS_UPDATE")
+    })
+
    // If a new guild is added, we will add it to the guilds map
     client.on("guildCreate", async (guild) => {
         
-        const guildMember = guild.members.cache.get(client.user.id);
-        if (guildMember) {
-            const missingPermissions = checkRequiredPermission(guildMember)
-            if(missingPermissions.length > 0) {
-                dlog.error("Le bot n'a pas les permissions nécessaires pour rejoindre la guilde : " + guild.name)
-                guild.leave()
-                return
-            }
-            dlog.log("Nouvelle guilde ajoutée : " + guild.name)
-            var allMembersOfGuild = await guild.members.fetch()
-            allMembersOfGuild = allMembersOfGuild.map(member => member.user.id)
-            guilds.set(guild.id, {
-                id: guild.id,
-                name: guild.name,
-                members: allMembersOfGuild,
-            })
-            glog.log("Guilde ajoutée : " + guild.name + " (" + guild.id + ")")
-            clearNeedUpdateForUsers()
-            process.emit("USERS_UPDATE")
-        }
+        await refreshGuilds()
+        glog.log("Guilde ajoutée : " + guild.name + " (" + guild.id + ")")
+        process.emit("USERS_UPDATE")
+        
     })
 
     client.on("guildDelete", (guild) => {
         dlog.log("Guilde supprimée : " + guild.name)
         guilds.delete(guild.id)
         glog.log("Guilde supprimée : " + guild.name + " (" + guild.id + ")")
-        clearNeedUpdateForUsers()
+        process.emit("USERS_UPDATE")
+    })
+
+    client.on('guildUpdate', async () => {
+        await refreshGuilds()
         process.emit("USERS_UPDATE")
     })
 
@@ -194,6 +176,35 @@ function init() {
     
 
     client.login(config.getToken())
+}
+
+async function refreshGuilds() {
+    glog.step.init("d_refresh_guilds", "Rafraichissement des guildes")
+    await client.guilds.fetch()
+    for(const guild of client.guilds.cache.values()) {
+        await guild.members.fetch()
+        var allMembersOfGuild = guild.members.cache.map(member => member.user.id)
+        const missingPermissions = checkRequiredPermission(guild.members.me)
+        if(missingPermissions.length > 0) {
+            dlog.error("Le bot n'a pas les permissions nécessaires pour rejoindre la guilde : " + guild.name)
+            guild.leave()
+            return
+        }
+        guilds.set(guild.id, {
+            id: guild.id,
+            name: guild.name,
+            allMembers: allMembersOfGuild,
+            icon: guild.iconURL(),
+            banner: guild.bannerURL(),
+            description: guild.description,
+            features: guild.features,
+            owner: guild.ownerId,
+            joinedAt: guild.joinedAt,
+            createdAt: guild.createdAt,
+        })
+        glog.log("Guilde rafraichie : " + guild.name + " (" + guild.id + ")")
+    }
+    glog.step.end("d_refresh_guilds")
 }
 
 function checkRequiredPermission(guildMember) {

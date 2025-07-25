@@ -13,13 +13,11 @@ class User {
     identity;
     tokens;
     labels;
-    guilds; 
-    constructor(auth, identity, tokens, labels, guilds) {
+    constructor(auth, identity, tokens, labels) {
         this.auth = auth;
         this.identity = identity;
         this.tokens = tokens;
         this.labels = labels;
-        this.guilds = guilds;
     }
 
     setAdmin() {
@@ -237,42 +235,6 @@ async function updateCredientials(id) {
 }
 
 
-async function updateGuilds(id) {
-    const user = getUserById(id);
-    if (!user) {
-        clog.warn(`Utilisateur ${id} non trouvé.`);
-        return null;
-    }
-    clog.log(`Mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
-    if (user.auth) {
-            const guilds = await discordAuth.getUserGuilds(user.auth);
-            if(guilds) {
-                if(typeof guilds.message !== "undefined") {
-                    clog.warn(`Erreur lors de la mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id}) : ${guilds.message}`);
-                    return null;
-                }
-                user.guilds = guilds;
-                clog.log(`Mise à jour réussie des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
-            }
-            else {
-                clog.warn(`Erreur lors de la mise à jour des guildes de l'utilisateur ${user.identity.username} (${user.identity.id})`);
-                return null;
-            }
-            // Update the user in the list
-            const userInUserList = userList.find(u => u.identity.id === user.identity.id);
-            if (userInUserList) {
-                userInUserList.auth = user.auth;
-                userInUserList.guilds = user.guilds;
-            }
-    } else {
-        clog.warn(`Aucune authentification trouvée pour l'utilisateur ${user.identity.username} (${user.identity.id})`);
-        return null;    
-    }
-    saveUsers();
-    
-    return user.guilds;
-}
-
 async function updateIdentity(id) {
     const user = getUserById(id);
     if (!user) {
@@ -315,10 +277,9 @@ async function updateIdentity(id) {
  * 
  * @param {*} auth 
  * @param {*} identity 
- * @param {*} guilds 
  * @returns {User} user
  */
-async function addUser(auth, identity, guilds) {
+async function addUser(auth, identity) {
     // Check if the user already exists
     const existingUser = userList.find(user => user.identity.id === identity.id);
     if (existingUser) {
@@ -326,7 +287,6 @@ async function addUser(auth, identity, guilds) {
         // Update the existing user with new information
         existingUser.auth = auth;
         existingUser.identity = identity;
-        existingUser.guilds = guilds;
         existingUser.tokens = existingUser.tokens || []; // Ensure tokens array exists
         existingUser.labels = existingUser.labels || []; // Ensure labels array exists
         saveUsers();
@@ -334,7 +294,7 @@ async function addUser(auth, identity, guilds) {
         return existingUser;
     }
 
-    const newUser = new User(auth, identity, [], [], guilds);
+    const newUser = new User(auth, identity, [], []);
 
     userList.push(newUser);
     await saveUsers();
@@ -412,7 +372,6 @@ function getSimpleUsers() {
         return {
             identity: user.identity,
             labels: user.labels,
-            guilds: user.guilds
         };
     });
 
@@ -424,7 +383,6 @@ function getSimpleUser(id) {
         return {
             identity: user.identity,
             labels: user.labels,
-            guilds: user.guilds
         };
     } else {
         return null;
@@ -515,7 +473,7 @@ function loadUsers() {
     UserDB.load()
     userList = new Array();
     for (const user of UserDB.getData()) {
-        userList.push(new User(user.auth, user.identity, user.tokens, user.labels, user.guilds));
+        userList.push(new User(user.auth, user.identity, user.tokens, user.labels));
     }
     clog.log(`Chargement de ${userList.length} utilisateurs.`);
     return userList;
@@ -528,7 +486,6 @@ function saveUsers() {
             identity: user.identity,
             tokens: user.tokens,
             labels: user.labels,
-            guilds: user.guilds
         };
     });
     UserDB.save()
@@ -564,7 +521,6 @@ module.exports = {
     getSimpleUser,
     updateCredientials,
     refreshAllUserInformation,
-    updateGuilds,
     updateIdentity,
     clearNeedUpdateForUsers
 };

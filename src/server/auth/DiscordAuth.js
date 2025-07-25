@@ -103,26 +103,6 @@ function refreshToken(refresh_token) {
     })
 }
 
-function getUserGuilds(accessToken) {
-    return new Promise((resolve, reject) => {
-        fetch("https://discord.com/api/users/@me/guilds", {
-            headers: {
-                authorization: `${accessToken.token_type} ${accessToken.access_token}`,
-            },
-        }).then(guildsResp => guildsResp.json()).then(guilds => {
-            if (guilds.error) {
-                dlog.error("Erreur lors de la récupération des guildes de l'utilisateur Discord : " + guilds.error + " : " + guilds.error_description);
-                dlog.log(accessToken.token_type + " " + accessToken.access_token )
-                resolve(null);
-                return;
-            }
-            resolve(guilds);
-        }).catch(err => {
-            dlog.error( "Erreur lors de la récupération des guildes de l'utilisateur Discord : " + err);
-            resolve(null);
-        })
-    })
-}
 
 function getUserIdentity(accessToken) {
     return new Promise((resolve, reject) => {
@@ -143,4 +123,4 @@ function getUserIdentity(accessToken) {
         })
     })
 }
-module.exports = {getDiscordUser, refreshToken, getUserGuilds, getUserIdentity}
+module.exports = {getDiscordUser, refreshToken, getUserIdentity}
