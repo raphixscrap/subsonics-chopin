@@ -158,8 +158,36 @@ class User {
         return this.labels.includes(ownerLabel);
     }
 
-   
+    justUpdated() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return false;
+        }
+        userInUserList.labels = userInUserList.labels.filter(label => !label.startsWith("UPDATED["));
+        userInUserList.labels.push("UPDATED[" + new Date().toISOString() + "]");
+        saveUsers();
+    }
 
+    needUpdate() {
+        const userInUserList = userList.find(user => user.identity.id === this.identity.id);
+        if (!userInUserList) {
+            clog.warn(`Utilisateur ${this.identity.username} non trouvé dans la liste des utilisateurs.`);
+            return false;
+        }
+            const lastUpdate = userInUserList.labels.find(label => label.startsWith("UPDATED["));
+            if (lastUpdate) {
+                const date = new Date(lastUpdate.replace("UPDATED[", "").replace("]", ""));
+                const now = new Date();
+                const diff = now - date;
+                // Check for 30 seconds
+                clog.log(`Dernière mise à jour de l'utilisateur ${this.identity.username} : ${date.toISOString()} (${diff} ms) - Besoin de mise à jour : ${diff > 30000}`);
+                // If the difference is greater than 30 seconds, we need to update
+                return diff > 30000; // 30 seconds
+            }
+        clog.log(`Aucune mise à jour n'a été effectuée pour l'utilisateur ${this.identity.username}.`);
+        return true;
+    }
 
 } 
 
@@ -241,6 +269,7 @@ async function updateGuilds(id) {
         return null;    
     }
     saveUsers();
+    
     return user.guilds;
 }
 
@@ -508,6 +537,14 @@ function saveUsers() {
     return loadUsers();    
 }
 
+function clearNeedUpdateForUsers() {
+    userList.forEach(user => {
+        user.labels = user.labels.filter(label => !label.startsWith("UPDATED["));
+    });
+    saveUsers();
+    clog.log("Nettoyage des mises à jour nécessaires pour tous les utilisateurs.");
+}
+
 
 module.exports = {User}   
 module.exports = {
@@ -528,5 +565,6 @@ module.exports = {
     updateCredientials,
     refreshAllUserInformation,
     updateGuilds,
-    updateIdentity
+    updateIdentity,
+    clearNeedUpdateForUsers
 };

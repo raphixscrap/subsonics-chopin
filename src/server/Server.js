@@ -1,6 +1,7 @@
 const {LogType} = require('loguix') 
 const wlog = new LogType("Server")
 
+const fs = require("fs")
 const path = require("path")
 const {Server} = require('socket.io')
 const {createServer} = require('http')
@@ -12,7 +13,7 @@ const discordBot = require("../discord/Bot")
 const discordAuth = require("../server/auth/DiscordAuth")
 const {Report} = require("../discord/ReportSender")
 const Finder = require("../player/Finder")
-const fs = require("fs")
+
 const {__glob} = require("../utils/GlobalVars")
 const playlists = require("../playlists/PlaylistManager")
 const history = require("../playlists/History")
@@ -31,6 +32,8 @@ const { getMediaInformationFromUrl } = require('../media/MediaInformation')
 const allConnectedUsers = new Array()
 const guildConnectedUsers = new Map()
 const UsersBySocket = new Map()
+
+//TODO: Refactor this file to implement the fact that server can be joined and leaved and all the events are now handled, so guildId is not required for every event
 
 function init() {
     
@@ -60,6 +63,7 @@ function init() {
 
     process.on("USERS_UPDATE", () => {
         if(io) {
+            updateGuildConnectedUsers()
             // Get all players and send them to client subscribed to the guild
             for(var guild of discordBot.getGuilds().keys()) {
                if(guildConnectedUsers.has(guild)) {
@@ -68,17 +72,17 @@ function init() {
                     wlog.log("Envoi de la liste des utilisateurs connectés (" + guildConnectedUsers.get(guild).length +") à la guilde : " + guild + " à tous les utilisateurs connectés")
                 }
             }
+            io.sockets.emit("/USER/READY")
         }
     })
-
 
     io.on("connection", async (socket) => {
         var socketUser;
 
         // Make sure Discord Bot is loaded and make an interruption until it is loaded
-        while(!discordBot.getClient().isReady()) {
-            wlog.warn("Attente de traitement : "+ socket.id + " : Le bot Discord n'est pas encore chargé, attente de 3 seconde... (Avoid Rate Limit)")
-            await new Promise(resolve => setTimeout(resolve, 3000))
+        while(!await discordBot.isReady()) {
+            wlog.warn("Attente de traitement : "+ socket.id + " : Le bot Discord n'est pas encore chargé, attente de 0.5 seconde... (Avoid Rate Limit)")
+            await new Promise(resolve => setTimeout(resolve, 500))
         }
 
         wlog.log(`Connexion d'un client : ${socket.id}`)
@@ -102,6 +106,7 @@ function init() {
         var token = socket.handshake.auth.token
         var sessionId = socket.handshake.auth.sessionId
         var auth_code = socket.handshake.auth.auth_code
+        var inLogin = false
 
         if(sessionId) {
             if(!session.checkSession(sessionId)) {
@@ -126,7 +131,8 @@ function init() {
                         }
                         const newToken = await loggedUser.createToken()
                         socket.emit("NEW_TOKEN", newToken)
-                        socket.disconnect()
+                        token = newToken
+                        inLogin = true
                         wlog.log("Utilisateur Discord associé à la session : " + sessionId + " récupéré avec succès")
                         
                     }
@@ -134,6 +140,7 @@ function init() {
                    
                 } else {
                     wlog.warn("Code d'authentification manquant pour le client :" + socket.id)
+                    socket.emit("AUTH_ERROR", "Code manquant invalide")
                     socket.disconnect()
                     return
                 }
@@ -142,6 +149,7 @@ function init() {
 
         if(!token) {
             wlog.warn("Token manquant pour le client :" + socket.id)
+            socket.emit("AUTH_ERROR", "Token invalide")
             sendSession()
             return
         }
@@ -150,31 +158,42 @@ function init() {
 
         if(!socketUser) {
             wlog.warn("Token invalide pour le client :" + socket.id)
+            socket.emit("AUTH_ERROR", "Token invalide")
             sendSession()
             return
         } else {
             if(!socketUser.auth) {
                 wlog.warn("L'utilisateur '" + socketUser.identity.username + "' n'a pas d'authentification Discord Valide")
                 socketUser.clearToken()
-                socket.emit("AUTH_ERROR", "AUTH_ERROR")
+                socket.emit("AUTH_ERROR", "L'authentification Discord de l'utilisateur n'est pas valide")
                 socket.disconnect()
                 return
             }
 
-            if (!(await users.updateGuilds(socketUser.identity.id)) || !(await users.updateIdentity(socketUser.identity.id))) {
-                wlog.error("Erreur lors de la mise à jour des informations de l'utilisateur : " + socketUser.identity.id);
-                socket.emit("UPDATE_ERROR", "Error updating user information");
-                wlog.log("Déconnexion de l'utilisateur : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)    
-                socket.disconnect();
-                return;
+            if(!inLogin) {
+                if(socketUser.needUpdate()) {
+                    if (!(await users.updateGuilds(socketUser.identity.id)) || !(await users.updateIdentity(socketUser.identity.id))) {
+                        wlog.error("Erreur lors de la mise à jour des informations de l'utilisateur : " + socketUser.identity.id);
+                        socket.emit("AUTH_ERROR", "Mise à jour des informations de l'utilisateur impossible");
+                        wlog.log("Déconnexion de l'utilisateur : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)    
+                        socket.disconnect();
+                        return;
+                     }
+                     socketUser.justUpdated()
+                } else {
+                    wlog.log("Pas de mise à jour des informations de l'utilisateur : " + socketUser.identity.id + " car l'utilisateur vient de se connecter")
+                }
+            
+            } else {
+                wlog.log("L'utilisateur '" + socketUser.identity.username + "' s'est connecté via la session : " + sessionId)
             }
+
         }
 
         socketUser = users.getUserByToken(token)
             
         if(socketUser) {
-
-            if(allConnectedUsers.includes(socketUser.identity.id)) {
+            if(allConnectedUsers.includes(socketUser.identity)) {
                 wlog.warn("L'utilisateur '" + socketUser.identity.username + "' est déjà connecté sur un autre appareil")
                 return
             } else {
@@ -189,7 +208,7 @@ function init() {
 
             if(socketUser.isFullBanned()) {
                 wlog.warn("Utilisateur banni : " + socketUser.identity.username + " (" + socketUser.identity.id + ") - Socket : " + socket.id)
-                socket.emit("BANNED")
+                socket.emit("AUTH_ERROR", "Vous êtes banni du serveur")
                 socket.disconnect()
             }
             if(socketUser.isAdmin()) {
@@ -197,6 +216,7 @@ function init() {
                 wlog.log("Utilisateur admin identifié : " + socketUser.identity.username + " (" + socketUser.identity.id + ")")
             }
 
+            IOAnswer("/USER/READY", true)
             // USERS
 
             // CHECKED : 24/04/2025
@@ -204,9 +224,31 @@ function init() {
                 var guildPresents = new Array();
                 var guildsOfBot = discordBot.getGuilds()
                 for(var guild of guildsOfBot) {
-                    
                     if(guild[1].members.includes(socketUser.identity.id)) {
-                        guildPresents.push(guild[1].id)
+                       const guildData = socketUser.guilds.find(g => g.id == guild[0])
+                       guildData['members'] = new Array()
+                       guildData.serverMember = guild[1].members.length
+                       for(var user of guild[1].members) {
+                        const userData = users.getUserById(user)
+                            if(userData && userData.identity.id != socketUser.identity.id && allConnectedUsers.includes(userData.identity)) {
+                                guildData.members.push({
+                                    id: userData.identity.id,
+                                    username: userData.identity.username,
+                                    avatar: userData.identity.avatar,
+                                    isAdmin: userData.isAdmin(),
+                                    isOwner: userData.isOwner(guild[0]),
+                                    isMod: userData.isMod(guild[0]),
+                                })
+                            }
+                       }
+                   
+                       // Send if the bot is connected to the guild
+                        if(players.getPlayer(guild[0]) && players.getPlayer(guild[0]).isConnected()) {
+                            guildData.connected = true
+                        } else {
+                            guildData.connected = false
+                        }
+                        guildPresents.push(guildData)
                     }
                 }
                 IOAnswer("/USER/INFO", {
@@ -225,6 +267,7 @@ function init() {
             //CHECKED : 24/04/2025
             IORequest("/USER/SIGNOUT", () => {
                 socketUser.removeToken(token)
+                IOAnswer("/USER/SIGNOUT", true) 
                 socket.disconnect()
             })
 
@@ -660,7 +703,7 @@ function init() {
                     if(userSocket) {
                         const socket = io.sockets.sockets.get(userSocket)
                         if(socket) {
-                            socket.emit("DELETED")
+                            socket.emit("AUTH_ERROR", "Votre compte a été supprimé")
                             socket.disconnect()
                         }
                     }
@@ -677,7 +720,10 @@ function init() {
                     }
                     IOAnswer("/ADMIN/PLAYER/GETALLSTATE", states)
                 })
+
+                
             }
+            
 
             // CHECKED : 24/04/2025
             IORequest("/OWNER/USERS/SWITCH_MOD", (data) => {
@@ -801,7 +847,7 @@ function init() {
             
         }
         
-       
+
 
         function handleDisconnect() {
             if(socketUser) {
@@ -866,6 +912,25 @@ function init() {
                 users.splice(users.indexOf(user), 1)
                 if(users.length == 0) {
                     guildConnectedUsers.delete(guild)
+                }
+            }
+        }
+    }
+
+    function updateGuildConnectedUsers() {
+        guildConnectedUsers.clear()
+        // Get from discordBot
+        const guilds = discordBot.getGuilds()
+        for(var guild of guilds) {
+            const members = discordBot.getGuildMembers(guild[0])
+            if(!members) continue
+            for(var member of members) {
+                const user = users.getUserById(member)
+                if(user && allConnectedUsers.includes(user.identity)) {
+                    if(!guildConnectedUsers.has(guild[0])) {
+                        guildConnectedUsers.set(guild[0], new Array())
+                    }
+                    guildConnectedUsers.get(guild[0]).push(user)
                 }
             }
         }

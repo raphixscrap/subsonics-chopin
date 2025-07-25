@@ -240,7 +240,9 @@ class Player {
             process.emit("PLAYERS_UPDATE")
             return true
         }
-       
+       const { LogType } = require('loguix')
+
+
     }
 
     async leave() {

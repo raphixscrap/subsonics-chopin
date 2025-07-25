@@ -17,7 +17,7 @@ async function getDiscordUser(sessionId, auth_code) {
     params.append("client_secret", getClientSecret());
     params.append("grant_type", "authorization_code");
     params.append("code", auth_code);
-    params.append("redirect_uri", getWebsiteLink() + "/callback");
+    params.append("redirect_uri", getWebsiteLink() + "/redirect");
     params.append("scope", "identify guilds");
 
     fetch("https://discord.com/api/oauth2/token", {
@@ -112,6 +112,7 @@ function getUserGuilds(accessToken) {
         }).then(guildsResp => guildsResp.json()).then(guilds => {
             if (guilds.error) {
                 dlog.error("Erreur lors de la récupération des guildes de l'utilisateur Discord : " + guilds.error + " : " + guilds.error_description);
+                dlog.log(accessToken.token_type + " " + accessToken.access_token )
                 resolve(null);
                 return;
             }

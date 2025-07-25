@@ -1,0 +1,220 @@
+const { Client, GatewayIntentBits, Collection, ActivityType, REST, Routes } = require("discord.js")
+const fs = require("node:fs")
+const path = require("path")
+const { __glob } = require("../utils/GlobalVars")
+const { LogType } = require("loguix")
+const config = require("../utils/Database/Configuration")
+const metric = require("webmetrik") 
+const { Player } = require("../player/Player")
+const {refreshAllUserInformation, clearNeedUpdateForUsers} = require("../server/auth/User")
+
+const dlog = new LogType("Discord")
+const glog = new LogType("GuildUpdater")
+dlog.log("Initialisation du Bot Discord")   
+
+const membersVoices = new Map()
+const timers = new Map()
+const guilds = new Map()
+
+var operational = false
+
+const client = new Client({
+    intents:[GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMembers],
+})
+
+
+//Getter for the client
+function getClient() {
+    return client
+}
+
+function getGuilds() {
+    return guilds
+}
+
+function getMembersVoices() {
+    return membersVoices
+}
+
+function isReady() {
+    return operational
+}
+
+function getGuildMembers(guildId) {
+    const guild = client.guilds.cache.get(guildId)
+    if(!guild) {
+        dlog.error("Guild not found: " + guildId)
+        return []
+    }
+    return guild.members.cache.map(member => member.user.id)
+}
+
+function getChannel(guildId, channelId) {
+    return client.guilds.cache.get(guildId).channels.cache.get(channelId)
+}
+
+function init() {
+        
+    client.once('ready', async () => {
+    dlog.log("Connexion au Bot Discord réussi ! Connecté en tant que : " + client.user.tag)
+
+    for (const guild of client.guilds.cache.values()) {
+        const missingPermissions = checkRequiredPermission(guild.members.me)
+        if (missingPermissions.length > 0) {
+            dlog.error("Le bot n'a pas les permissions nécessaires pour rejoindre la guilde : " + guild.name)
+            dlog.error("Permissions manquantes : " + missingPermissions.join(", "))
+            await guild.leave()
+            continue
+        }
+
+        var guildMember = await guild.members.fetch()
+        guildMember = guildMember.map(member => member.user.id)
+        guilds.set(guild.id, {
+            id: guild.id,
+            name: guild.name,
+            members: guildMember,
+        })
+        glog.log("Guilde instanciée (démarrage) : " + guild.name + " (" + guild.id + ")")
+    }
+
+    await refreshAllUserInformation()
+
+    const Activity = require("./Activity")
+    Activity.idleActivity()
+
+    const CommandUpdater = require("./CommandUpdater")
+    CommandUpdater.init()
+
+    const commandManager = client.application.commands
+    if (!commandManager) {
+        dlog.error('Command manager not available.')
+    } else {
+        commandManager.set([])
+    }
+
+    dlog.step.end("d_init")
+    operational = true
+})
+
+    client.on("interactionCreate", (interaction) => {
+        
+        if(!interaction.isCommand()) return;
+
+        var numberOfCommands = new metric.Metric("numberOfCommands", "Nombre de commandes éxécutées")
+        numberOfCommands.setValue(numberOfCommands.getValue() + 1)
+
+        const command = client.commands.get(interaction.commandName)
+
+        try {
+            
+            // Create a metric to count the number of commands executed by each user
+            const userCommand = new metric.Metric("userCommand_" + interaction.member.user.username, "Nombre de commandes éxécutées par l'utilisateur : " + interaction.member.user.username)
+            userCommand.setValue(userCommand.getValue() + 1)
+            dlog.log(interaction.member.user.username + "-> /" + interaction.commandName)
+            command.execute(client, interaction)
+        } catch(error) {
+
+            dlog.error(interaction.member.user.username + "-> /" + interaction.commandName + " : ERREUR RENCONTRE")
+            dlog.error(error)
+            interaction.reply({content:"Erreur lors de l'éxécution de la commande !", ephemeral: true})
+        }
+    })
+
+   // If a new guild is added, we will add it to the guilds map
+    client.on("guildCreate", async (guild) => {
+        
+        const guildMember = guild.members.cache.get(client.user.id);
+        if (guildMember) {
+            const missingPermissions = checkRequiredPermission(guildMember)
+            if(missingPermissions.length > 0) {
+                dlog.error("Le bot n'a pas les permissions nécessaires pour rejoindre la guilde : " + guild.name)
+                guild.leave()
+                return
+            }
+            dlog.log("Nouvelle guilde ajoutée : " + guild.name)
+            var allMembersOfGuild = await guild.members.fetch()
+            allMembersOfGuild = allMembersOfGuild.map(member => member.user.id)
+            guilds.set(guild.id, {
+                id: guild.id,
+                name: guild.name,
+                members: allMembersOfGuild,
+            })
+            glog.log("Guilde ajoutée : " + guild.name + " (" + guild.id + ")")
+            clearNeedUpdateForUsers()
+            process.emit("USERS_UPDATE")
+        }
+    })
+
+    client.on("guildDelete", (guild) => {
+        dlog.log("Guilde supprimée : " + guild.name)
+        guilds.delete(guild.id)
+        glog.log("Guilde supprimée : " + guild.name + " (" + guild.id + ")")
+        clearNeedUpdateForUsers()
+        process.emit("USERS_UPDATE")
+    })
+
+    client.on("voiceStateUpdate", (oldMember, newMember) => {
+        membersVoices.set(newMember.id, {
+            guildId: newMember.guild.id,
+            channelId: newMember.channelId,
+        })
+
+        const player = new Player(newMember.guild.id)
+
+        if(player.connection && player.channelId) {
+            client.channels.fetch(player.channelId).then(channel => {
+
+                if(channel.members.size <= 1) {
+                    
+                    // If the player is alone in the channel, we will destroy it in 10 minutes
+                    // 10 minutes = 600000 ms
+                    // 10 second = 10000 ms
+                    timers.set(newMember.guild.id, setTimeout(() => {
+                        const getPlayer = new Player(newMember.guild.id)
+                        if(getPlayer.connection && player.channelId) {
+                            getPlayer.leave()
+                            dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " - Player supprimé : " + channel.name)
+                        }
+                 
+                    }, 600000))
+                    dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player supprimé dans 10 minutess : " + channel.name)
+                } else {
+                    dlog.log("[Automatic Task] Guild Id :" + newMember.guild.id + " -  Player n'est pas seul dans le channel : " + channel.name)
+                    clearTimeout(timers.get(newMember.guild.id))
+                    timers.delete(newMember.guild.id)
+                }
+            })
+ 
+        }
+
+        
+    })
+
+
+    
+
+    client.login(config.getToken())
+}
+
+function checkRequiredPermission(guildMember) {
+    const requiredPermissions = [
+        'CreateInstantInvite',    'AddReactions',
+        'Stream',                 'ViewChannel',
+        'SendMessages',           'SendTTSMessages',
+        'EmbedLinks',             'AttachFiles',
+        'ReadMessageHistory',     'UseExternalEmojis',
+        'Connect',                'Speak',
+        'UseVAD',                 'ChangeNickname',
+        'UseApplicationCommands', 'RequestToSpeak',
+        'CreatePublicThreads',    'CreatePrivateThreads',
+        'UseExternalStickers',    'SendMessagesInThreads',
+        'UseEmbeddedActivities',  'UseSoundboard',
+        'UseExternalSounds',      'SendVoiceMessages',
+        'SendPolls',              'UseExternalApps'
+        ]
+    return requiredPermissions.filter(permission => !guildMember.permissions.has(permission));
+}
+
+module.exports = {init, getClient, getGuilds, getMembersVoices, getChannel, getGuildMembers, isReady}
+
+

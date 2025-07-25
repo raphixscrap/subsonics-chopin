@@ -22,7 +22,12 @@ if(!config.getMediaGuildId() || !config.getMediaChannelId()) {
 var channel = null
 
 discordBot.getClient().on("ready", () => {
-    channel = discordBot.getChannel(config.getMediaGuildId(), config.getMediaChannelId())
+    try {
+        channel = discordBot.getChannel(config.getMediaGuildId(), config.getMediaChannelId())
+    } catch (e) {
+
+    }
+
     if(!channel) {
     wlog.warn("Le canal multimédia n'existe pas, vérifiez le fichier de configuration.")
     wlog.step.error("init_db","Impossible d'initialiser la base de données multimédia, vérifiez le fichier de configuration.")
