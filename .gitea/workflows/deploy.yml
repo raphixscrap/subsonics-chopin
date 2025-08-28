@@ -27,7 +27,7 @@ jobs:
       - name: Deploy Subsonics as gitlab-ci
         run: |
           ssh -A -o StrictHostKeyChecking=no raphix@alpha.raphix.fr << 'EOF'
-            sudo -E -u gitlab-ci bash << 'INNER_EOF'
+            sudo su - gitlab-ci -c '
               set -e
 
               # Variables PM2 et npm
@@ -82,5 +82,5 @@ jobs:
               echo "[Subsonics-Deploy] - Démarrage de Subsonics : Success"
 
               echo "[Subsonics-Deploy] - Stage - Déploiement  - END"
-            INNER_EOF
+            '
           EOF
