@@ -3,6 +3,7 @@ const { getReadableDuration } = require("../utils/TimeConverter");
 class Playlist {
     title = "Aucun titre";
     id;
+    playlistId;
     url;
     author = "Auteur inconnu";
     authorId;

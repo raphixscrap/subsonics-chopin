@@ -3,7 +3,7 @@ const clog = new LogType("YoutubeInformation");
 const { Song } = require('../player/Song');
 const { Playlist } = require('../playlists/Playlist');
 const { getReadableDuration, getSecondsDuration } = require('../utils/TimeConverter');
-const ytsr = require('@distube/ytsr');
+const yts = require("yt-search")
 const ytfps = require('ytfps');
 
 async function getQuery(query, multiple) {
@@ -14,15 +14,15 @@ async function getQuery(query, multiple) {
 
     try {
         const limit = multiple ? 25 : 1;
-        const searchResults = await ytsr(query, { limit });
-        const videos = searchResults.items.filter(item => item.type === 'video');
+        const searchResults = await yts({ query: query, limit: limit });
+        const videos = searchResults.videos;
 
         if (videos.length === 0) {
             clog.error("Impossible de récupérer le lien de la vidéo YouTube à partir de la requête");
             return null;
         }
 
-        const songs = await Promise.all(videos.map(video => getVideo(video.url)));
+        const songs = await Promise.all(videos.map(video => new Song().processYoutubeVideo(video)));
         return multiple ? songs.filter(song => song !== null) : songs[0];
     } catch (error) {
         clog.error('Erreur lors de la recherche YouTube: ' + error);
@@ -38,9 +38,7 @@ async function getVideo(url) {
     }
 
     try {
-        const searchResults = await ytsr(videoId[1], { limit: 1 });
-        const video = searchResults.items.find(item => item.type === 'video');
-
+        const video = await yts({videoId: videoId[1]});
         if (video) {
             const songReturn = new Song();
             await songReturn.processYoutubeVideo(video);
@@ -72,14 +70,14 @@ async function getPlaylist(url) {
             playlistId = url.match(/(list=)([a-zA-Z0-9_-]+)/);
         }
         
-        console.log(playlistId);
+
 
         if (playlistId === null) {
             clog.error("Impossible de récupérer l'identifiant de la playlist YouTube à partir de l'URL");
             return null;
         }
 
-        const playlistInfo = await ytfps(playlistId[2]);
+        const playlistInfo = await yts({ listId: playlistId[2] });
 
         if (!playlistInfo) {
             clog.error("Impossible de récupérer la playlist YouTube à partir de l'identifiant");
@@ -90,15 +88,16 @@ async function getPlaylist(url) {
         playlist.type = "youtube";
         playlist.author = playlistInfo.author.name;
         playlist.authorId = playlistInfo.author.url;
+        playlist.authorAvatar = await getYouTubeProfilePicture(playlistInfo.author.url);
         playlist.title = playlistInfo.title;
-        playlist.thumbnail = playlistInfo.thumbnail_url;
-        playlist.description = playlistInfo.description;
+        playlist.thumbnail = playlistInfo.thumbnail;
         playlist.url = `https://www.youtube.com/playlist?list=${playlistId[2]}`;
-        playlist.id = playlistId[2];
+        playlist.id = playlistInfo.listId;
+        playlist.views = playlistInfo.views;
 
         for (const video of playlistInfo.videos) {
             const song = new Song();
-            await song.processYoutubeVideo(video, true);
+            await song.processYoutubeVideo(video);
             playlist.duration += song.duration;
             playlist.songs.push(song);
         }
@@ -117,17 +116,47 @@ async function getSecondsFromUrl(url) {
         return null;
     }
     try {
-        const searchResults = await ytsr(videoId[1], { limit: 1 });
-        const video = searchResults.items.find(item => item.type === 'video');
-        console.log(video);
+        const video = await yts({ videoId: videoId[1] });
         if (video) {
-            return getSecondsDuration(video.duration); // Convert seconds to milliseconds
+            return video.duration.seconds;
         } else {
             clog.error("Impossible de récupérer la vidéo YouTube à partir de l'identifiant");
             return null;
         }
     } catch (error) {
         clog.error('Erreur lors de la recherche de la vidéo YouTube:' + error);
+        return null;
+    }
+}
+
+async function getYouTubeProfilePicture(channelUrl) {
+    try {
+        const res = await fetch(channelUrl, {
+            headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+        });
+        const html = await res.text();
+
+        // Match img with yt-spec-avatar-shape__image in class list
+        const imgRegex = /<img[^>]*(?:class="[^"]*\byt-spec-avatar-shape__image\b[^"]*"[^>]*|[^>]*class="[^"]*\byt-spec-avatar-shape__image\b[^"]*")[^>]*src="([^"]+)"/i;
+        const imgMatch = html.match(imgRegex);
+
+        if (imgMatch && imgMatch[1]) {
+            return imgMatch[1];
+        }
+
+        // Fallback: look for avatar in embedded JSON
+        const jsonRegex = /"avatar":\{"thumbnails":\[\{"url":"(.*?)"/;
+        const match = html.match(jsonRegex);
+        if (match && match[1]) {
+            return match[1].replace(/\\u0026/g, "&"); // Decode \u0026 to &
+        }
+
+        console.warn("Photo non trouvée pour :", channelUrl);
+        return null;
+    } catch (err) {
+        console.error("Erreur :", err);
         return null;
     }
 }

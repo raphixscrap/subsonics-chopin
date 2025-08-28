@@ -21,7 +21,7 @@ async function getMediaInformation(instance, media, provider) {
         
         // Obtenir l'auteur (s'il existe)
         instance.author = info.streams?.[0]?.tags?.artist ?? instance.author;
-
+        return true;
     } catch (err) {
         clog.error("Impossible de récupérer les informations de la musique : " + media.attachment.name)
         clog.error(err)
@@ -46,7 +46,7 @@ async function getMediaInformationFromUrl(instance, url) {
         
         // Obtenir l'auteur (s'il existe)
         instance.author = info.streams?.[0]?.tags?.artist ?? "Auteur inconnu";
-
+        return true;
     } catch (err) {
         clog.error("Impossible de récupérer les informations de la musique depuis l'URL : " + url);
         console.log(err)

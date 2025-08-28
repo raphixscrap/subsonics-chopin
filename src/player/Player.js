@@ -5,6 +5,7 @@ const songCheck = require('./SongCheck')
 const ffmpeg = require('fluent-ffmpeg')
 const fs = require('fs')
 const { PassThrough } = require('stream');
+const { Metric } = require('webmetrik')
 
 const plog = new LogType("Player")
 const clog = new LogType("Signal")
@@ -21,6 +22,7 @@ class Player {
     player;
     guildId;
     channelId;
+    channelName;
     queue;
     currentResource;
     loop = false;
@@ -29,7 +31,9 @@ class Player {
             clog.error("Impossible de créer un Player, car guildId est null")
             return
         }
+       
         if(AllPlayers.has(guildId)) {
+
             return AllPlayers.get(guildId)
         }
         this.connection = null
@@ -37,6 +41,7 @@ class Player {
         this.guildId = guildId
         this.queue = new List(guildId)
         AllPlayers.set(guildId, this)
+    
     }
 
     async join(channel) {
@@ -59,6 +64,7 @@ class Player {
 
     joinChannel(channel) {
         this.channelId = channel.id 
+        this.channelName = channel.name
         this.connection = joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
@@ -77,6 +83,8 @@ class Player {
             }
         });
         this.connected = true
+        AllPlayers.set(this.guildId, this)
+
         process.emit("PLAYERS_UPDATE")
     }
 
@@ -134,7 +142,7 @@ class Player {
         const state = {
             current: this.queue.current,
             next: this.queue.next,
-            previous: this.queue.previous,
+            previous: this.queue.getPrevious(),
             loop: this.loop,
             shuffle: this.queue.shuffle,
             paused: playerStatus === AudioPlayerStatus.Paused,
@@ -143,6 +151,7 @@ class Player {
             playerState: playerStatus,
             connectionState: connectionStatus,
             channelId: this.channelId,
+            channelName: this.channelName,
             guildId: this.guildId,
         }
         return state
@@ -171,11 +180,18 @@ class Player {
     }
 
     async play(song) {
+
         if(!songCheck.checkSong(song)) return
         if(this.checkConnection()) return
         if(this.queue.current != null) {
             this.player.stop()
         }
+
+        var numberOfMusicPlayedPerServer = new Metric("numberOfMusicPlayed_" + this.guildId, "Nombre de musiques jouées sur le serveur : " + this.guildId)
+        numberOfMusicPlayedPerServer.setValue(numberOfMusicPlayedPerServer.getValue() + 1)
+
+        var numberOfSecondsPlayedPerServer = new Metric("numberOfSecondsPlayed_" + this.guildId, "Temps jouée sur le serveur : " + this.guildId)
+        numberOfSecondsPlayedPerServer.setValue(numberOfSecondsPlayedPerServer.getValue() + song.duration)
 
         this.queue.setCurrent(song)
         this.stream = await this.getStream(song)
@@ -240,8 +256,7 @@ class Player {
             process.emit("PLAYERS_UPDATE")
             return true
         }
-       const { LogType } = require('loguix')
-
+      
 
     }
 
@@ -257,6 +272,7 @@ class Player {
         this.player = null
         this.connection = null
         this.channelId = null
+        this.channelName = null
         this.connected = false
         Activity.idleActivity()
         this.queue.destroy()
@@ -291,6 +307,7 @@ class Player {
         }
 
         const passThroughStream = new PassThrough();
+        duration = Math.floor(duration.time);
         ffmpeg(this.stream)
             .setStartTime(duration) // Démarrer à la position demandée (en secondes)
             .outputOptions('-f', 'mp3') // Specify output format if needed
@@ -398,6 +415,7 @@ function getAllPlayers() {
     AllPlayers.forEach((player) => {
         players.push(player)
     })
+    return players
 }
 
 function isPlayer(guildId) {

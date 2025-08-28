@@ -60,6 +60,7 @@ class List {
         }
         this.setCurrent(song)
         process.emit("PLAYERS_UPDATE")
+        //TODO: Check History and continuity
         return song
     }
 

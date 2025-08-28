@@ -10,10 +10,9 @@ require("loguix").setup(__glob.LOGS, __glob.PACKAGEINFO)
 const config = require("./utils/Database/Configuration")
 const metric = require("webmetrik")
 metric.setMetricFile(__glob.METRIC_FILE)
-metric.publishMetrics("8001", "raphraph")
+metric.publishMetrics("8001", "subsonicsMetricsRaph")
 
-
-// SETUP 
+// SETUP
 
 setup();
 

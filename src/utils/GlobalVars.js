@@ -1,5 +1,6 @@
 const path = require("path")
 const root = path.resolve(__dirname, '../../')
+const version = JSON.parse(require('fs').readFileSync(root + path.sep + "package.json", "utf-8")).version
 
 const __glob = {
     PACKAGEINFO: root + path.sep + "package.json",
@@ -14,6 +15,8 @@ const __glob = {
     PLAYLISTFILE: root + path.sep + "data" + path.sep + "playlists.json",
     HISTORY_DB: root + path.sep + "data" + path.sep + "history.json",
     MEDIA_DB: root + path.sep + "data" + path.sep + "media.json",
+    VERSION: version,
+    CHANGELOG_PATH: root + path.sep + "CHANGELOG.html",
 }
 
 module.exports = {__glob}

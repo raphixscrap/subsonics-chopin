@@ -35,27 +35,28 @@ function getPlaylistsOfUser(id) {
 
 /**
  * @param {string} id 
- * @param {string} name 
+ * @param {string} playlistId 
  * @returns {Playlist}
  */
-function getPlaylistOfUser(id, name) {
+function getPlaylistOfUser(id, playlistId) {
     const playlists = getPlaylistsOfUser(id);
-    const playlist = playlists.find(p => p.title === name);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${name} n'existe pas pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return null;
     }
     return playlist;
 }
 
-async function addPlaylist(id, name, url) {
+async function addPlaylist(id, name, url, authorName, authorId, authorAvatar) {
     const playlists = getPlaylistsOfUser(id);
     var playlist = new Playlist(name, url);
-    if (playlists.find(p => p.title === name)) {
-        clog.warn(`La playlist ${name} existe déjà pour l'utilisateur ${id}`);
-        return;
-    }
-    var failed;
+    let failed = false;
+    playlist.thumbnail = null
+    playlist.author = authorName;
+    playlist.authorAvatar = `https://cdn.discordapp.com/avatars/${authorId}/${authorAvatar}`;
+    playlist.views = null;
+
     if(url) {
         await Finder.search(url, false, "PLAYLIST").then(async (playlistFounded) => {
             if(!playlistFounded) {
@@ -69,7 +70,7 @@ async function addPlaylist(id, name, url) {
             }
         })
     }
-
+    playlist.playlistId = new String(Date.now());
     if(failed) {
         clog.error(`Impossible de trouver la playlist ${name} pour l'utilisateur ${id}`);
         return null;
@@ -81,65 +82,60 @@ async function addPlaylist(id, name, url) {
     return playlist;
 } 
 
-function removePlaylist(id, name) {
+function removePlaylist(id, playlistId) {
     const playlists = getPlaylistsOfUser(id);
-    const index = playlists.findIndex(p => p.title === name);
+    const index = playlists.findIndex(p => p.playlistId === playlistId);
     if (index === -1) {
-        clog.warn(`La playlist ${name} n'existe pas pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return;
     }
     playlists.splice(index, 1);
     playlistDB.save();
-    clog.log(`Suppression de la playlist ${name} pour l'utilisateur ${id}`);
+    clog.log(`Suppression de la playlist ${playlistId} pour l'utilisateur ${id}`);
 }
-function getPlaylist(id, name) {
+function getPlaylist(id, playlistId) {
     const playlists = getPlaylistsOfUser(id);
-    const playlist = playlists.find(p => p.title === name);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${name} n'existe pas pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return null;
     }
     return playlist;
 }
 
-function copyPlaylist(fromId, toId, name) {
+function copyPlaylist(fromId, toId, playlistId) {
     const playlists = getPlaylistsOfUser(fromId);
-    const playlist = playlists.find(p => p.title === name);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${name} n'existe pas pour l'utilisateur ${fromId}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${fromId}`);
         return null;
     }
     const toPlaylists = getPlaylistsOfUser(toId);
     // Check if the playlist already exists in the target user
-    if (toPlaylists.find(p => p.title === name)) {
-        clog.warn(`La playlist ${name} existe déjà pour l'utilisateur ${toId}`);
+    if (toPlaylists.find(p => p.title === playlist.title)) {
+        clog.warn(`La playlist ${playlist.title} existe déjà pour l'utilisateur ${toId}`);
         return null;
     }
     toPlaylists.push(playlist);
     playlistDB.save();
-    clog.log(`Copie de la playlist ${name} de l'utilisateur ${fromId} vers l'utilisateur ${toId}`);
+    clog.log(`Copie de la playlist ${playlist.title} de l'utilisateur ${fromId} vers l'utilisateur ${toId}`);
 
     return false;
 }
 
-function renamePlaylist(id, oldName, newName) {
+function renamePlaylist(id, playlistId, newName) {
     const playlists = getPlaylistsOfUser(id);
-    const playlist = playlists.find(p => p.title === oldName);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${oldName} n'existe pas pour l'utilisateur ${id}`);
-        return null;
-    }
-    // Check if the new name already exists
-    if (playlists.find(p => p.title === newName)) {
-        clog.warn(`La playlist ${newName} existe déjà pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return null;
     }
     playlist.title = newName;
     playlistDB.save();
-    clog.log(`Renommage de la playlist ${oldName} en ${newName} pour l'utilisateur ${id}`);
+    clog.log(`Renommage de la playlist ${playlistId} en ${newName} pour l'utilisateur ${id}`);
 }
 
-function addSong(id, playlistName, song) {
+function addSong(id, playlistId, song) {
     if(typeof song === "string") {
         try {
             song = JSON.parse(song)
@@ -154,9 +150,9 @@ function addSong(id, playlistName, song) {
         return null;
     }
     const playlists = getPlaylistsOfUser(id);
-    const playlist = playlists.find(p => p.title === playlistName);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${playlistName} n'existe pas pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return null;
     }
     // Check the integrity of the song
@@ -165,25 +161,31 @@ function addSong(id, playlistName, song) {
         return null;
     }
     playlist.songs.push(song);
+    // Recalculate the songs duration and readduration
+    playlist.duration += song.duration;
+    playlist.readduration = getReadableDuration(playlist.duration);
     playlistDB.save();
-    clog.log(`Ajout de la chanson ${song.title} à la playlist ${playlistName} pour l'utilisateur ${id}`);
+    clog.log(`Ajout de la chanson ${song.title} à la playlist ${playlistId} pour l'utilisateur ${id}`);
 }
 
-function removeSong(id, playlistName, songId) {
+function removeSong(id, playlistId, songId) {
     const playlists = getPlaylistsOfUser(id);
-    const playlist = playlists.find(p => p.title === playlistName);
+    const playlist = playlists.find(p => p.playlistId === playlistId);
     if (!playlist) {
-        clog.warn(`La playlist ${playlistName} n'existe pas pour l'utilisateur ${id}`);
+        clog.warn(`La playlist ${playlistId} n'existe pas pour l'utilisateur ${id}`);
         return null;
     }
     const index = playlist.songs.findIndex(s => s.id === songId);
     if (index === -1) {
-        clog.warn(`La chanson ${songId} n'existe pas dans la playlist ${playlistName} pour l'utilisateur ${id}`);
+        clog.warn(`La chanson ${songId} n'existe pas dans la playlist ${playlistId} pour l'utilisateur ${id}`);
         return null;
     }
+
+    playlist.duration -= playlist.songs[index].duration;
     playlist.songs.splice(index, 1);
+    playlist.readduration = getReadableDuration(playlist.duration);
     playlistDB.save();
-    clog.log(`Suppression de la chanson ${songId} de la playlist ${playlistName} pour l'utilisateur ${id}`);
+    clog.log(`Suppression de la chanson ${songId} de la playlist ${playlistId} pour l'utilisateur ${id}`);
 }
 
 async function processYoutubeData(userId, data) {
@@ -264,6 +266,55 @@ async function processYoutubeData(userId, data) {
     return playlists;
 }
 
+async function deleteUserPlaylists(userId) {
+    // Delete all playlists of the user and the keys
+    if (!playlistDB.data[userId]) {
+        clog.warn(`Aucune playlist trouvée pour l'utilisateur ${userId}`);
+        return;
+    }
+    delete playlistDB.data[userId];
+    playlistDB.save();
+}
+
+async function refreshPlaylist(userId, playlistId) {
+    var playlist = getPlaylistOfUser(userId, playlistId);
+    if (!playlist) {
+        clog.warn(`Aucune playlist trouvée pour l'utilisateur ${userId} avec l'ID ${playlistId}`);
+        return null;
+    }
+    let failed = false;
+    // If playlistHasUrl, refresh the playlist
+    if (playlist.url) {
+        await Finder.search(playlist.url, false, "PLAYLIST").then(async (playlistFounded) => {
+            if(!playlistFounded) {
+                failed = true;
+            }
+            if(playlistFounded instanceof Playlist) {
+                playlist = playlistFounded;
+            }   
+            if(playlist.type === "spotify") {
+                playlist.songs = await spotify.getTracks(playlist);
+            }
+        })
+    }
+
+    
+
+    if(failed) {
+        clog.warn(`Échec de la mise à jour de la playlist ${playlistId} pour l'utilisateur ${userId}`);
+        return null;
+    }
+
+    playlist.playlistId = playlistId;
+    const playlists = getPlaylistsOfUser(userId);
+    // Remove the older one
+    // Push at the same index
+    const existingIndex = playlists.findIndex(p => p.playlistId === playlistId);
+    playlists.splice(existingIndex, 1, playlist);
+    playlistDB.save();
+    return playlist;
+}
+
 module.exports = {
     getPlaylistsOfUser,
     getPlaylistOfUser,
@@ -274,5 +325,7 @@ module.exports = {
     renamePlaylist,
     addSong,
     removeSong,
-    processYoutubeData
+    processYoutubeData,
+    deleteUserPlaylists,
+    refreshPlaylist
 }

@@ -83,11 +83,12 @@ function init() {
 
         var numberOfCommands = new metric.Metric("numberOfCommands", "Nombre de commandes éxécutées")
         numberOfCommands.setValue(numberOfCommands.getValue() + 1)
+        var numberOfCommandsServer = new metric.Metric("numberOfCommands_" + interaction.guild.id, "Nombre de commandes éxécutées sur le serveur : " + interaction.guild.name)
+        numberOfCommandsServer.setValue(numberOfCommandsServer.getValue() + 1)
 
         const command = client.commands.get(interaction.commandName)
 
         try {
-            
             // Create a metric to count the number of commands executed by each user
             const userCommand = new metric.Metric("userCommand_" + interaction.member.user.username, "Nombre de commandes éxécutées par l'utilisateur : " + interaction.member.user.username)
             userCommand.setValue(userCommand.getValue() + 1)
@@ -169,7 +170,7 @@ function init() {
  
         }
 
-        
+        process.emit("VOCAL_UPDATE")
     })
 
 

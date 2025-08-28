@@ -4,6 +4,8 @@ const wlog = new LogType("MediaBase")
 const { Database } = require("../utils/Database/Database")
 const {__glob} = require("../utils/GlobalVars")
 const { AttachmentBuilder } = require("discord.js")
+const { Song } = require("../player/Song")
+const { getMediaInformationFromUrl } = require("../media/MediaInformation")
 const discordBot = require("./Bot")
 
 
@@ -54,7 +56,7 @@ discordBot.getClient().on("ready", () => {
 
 // SEND FILE TO DISCORD AND GET THE URL ID
 
-async function postMedia(file) {
+async function postMedia(file, userId) {
     if(!connected) {
         wlog.error("La base de données multimédia n'est pas connectée, impossible d'envoyer le fichier.")
         return null
@@ -73,7 +75,8 @@ async function postMedia(file) {
             url: url,
             name: file.name,
             size: file.size,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            userId: userId
         })
         mediaDB.save()
         return url
@@ -81,6 +84,33 @@ async function postMedia(file) {
         wlog.error(`Erreur lors de l'envoi du fichier : ${error.message}`)
         return null
     }
+}
+
+async function getAllMedia(userId) {
+    if(!connected) {
+        wlog.error("La base de données multimédia n'est pas connectée, impossible de récupérer les fichiers.")
+        return []
+    }
+    const allSongs = mediaDB.data.filter(m => m.userId === userId)
+    const songs = []
+    for(const songDB of allSongs) {
+        const song = new Song()
+        const information = await getMediaInformationFromUrl(song, songDB.url)
+        if(!information) {
+            mediaDB.data = mediaDB.data.filter(m => m.id !== songDB.id)
+            mediaDB.save()
+            continue
+        }
+        song.type = "attachment"
+        song.author = songDB.author
+        song.createdAt = songDB.createdAt
+        song.author = songDB.userId
+        song.title = songDB.name
+        song.id = songDB.id
+        song.url = songDB.url
+        songs.push(song)
+    }
+    return songs
 }
 
 async function getMedia(id) {
@@ -103,7 +133,26 @@ async function getMedia(id) {
     }
 }
 
+function deleteMedia(data, userId) {
+    if(!connected) {
+        wlog.error("La base de données multimédia n'est pas connectée, impossible de supprimer le fichier.")
+        return false
+    }
+
+    const mediaIndex = mediaDB.data.findIndex(m => m.id === data.id && m.userId === userId)
+    if(mediaIndex === -1) {
+        wlog.error(`Aucun média trouvé avec l'ID : ${data.id} pour l'utilisateur : ${userId}`)
+        return false
+    }
+
+    mediaDB.data.splice(mediaIndex, 1)
+    mediaDB.save()
+    return true
+}
+
 module.exports = {
     postMedia,
     getMedia,
+    deleteMedia,
+    getAllMedia
 }

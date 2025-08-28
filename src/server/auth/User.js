@@ -145,15 +145,8 @@ class User {
         return this.labels.includes("ADMIN");
     }
     isMod(guildId) {
-        if(this.isOwner(guildId)) return true;
         const modLabel = `MOD_${guildId}`;
-        return this.labels.includes(modLabel);
-    }
-
-    isOwner(guildId) {
-        const ownerLabel = `OWNER_${guildId}`;
-        if(this.isAdmin()) return true;
-        return this.labels.includes(ownerLabel);
+        return this.labels.includes(modLabel) || this.isAdmin();
     }
 
     justUpdated() {
@@ -241,6 +234,10 @@ async function updateIdentity(id) {
         clog.warn(`Utilisateur ${id} non trouvé.`);
         return null;
     }
+    if(user.labels.includes("DELETED")) {
+        clog.warn(`L'utilisateur ${user.identity.username} (${user.identity.id}) est marqué comme supprimé, il ne peut pas être mis à jour.`);
+        return null;
+    }
     clog.log(`Mise à jour de l'identité de l'utilisateur ${user.identity.username} (${user.identity.id})...`);
     if (user.auth) {
         const identity = await discordAuth.getUserIdentity(user.auth);
@@ -284,6 +281,10 @@ async function addUser(auth, identity) {
     const existingUser = userList.find(user => user.identity.id === identity.id);
     if (existingUser) {
         clog.warn(`L'utilisateur ${identity.username} existe déjà.`);
+        if(existingUser.labels.includes("DELETED")) {
+            clog.warn(`L'utilisateur ${identity.username} est marqué comme supprimé, il sera réactivé.`);
+            existingUser.labels = existingUser.labels.filter(label => label !== "DELETED");
+        }
         // Update the existing user with new information
         existingUser.auth = auth;
         existingUser.identity = identity;
@@ -391,81 +392,76 @@ function getSimpleUser(id) {
 
 // SET LABELS
 
-function setAdmin(id) {
+async function setAdmin(id) {
     const user = getUserById(id);
     if (user) {
-        user.setAdmin();
-        saveUsers();
+        await user.setAdmin();
+        await saveUsers();
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
 
-function setGuildMod(id, guildId) {
+async function setGuildMod(id, guildId) {
     const user = getUserById(id);
     if (user) {
         const modLabel = `MOD_${guildId}`;
         if (user.labels.includes(modLabel)) {
-            user.labels.splice(user.labels.indexOf(modLabel), 1);
+           await user.labels.splice(user.labels.indexOf(modLabel), 1);
             clog.log(`L'utilisateur ${user.identity.username} n'est plus modérateur du serveur ${guildId}.`);
         } else {
-            user.labels.push(modLabel);
+           await user.labels.push(modLabel);
             clog.log(`L'utilisateur ${user.identity.username} est maintenant modérateur du serveur ${guildId}.`);
         }
-        saveUsers();
+        await saveUsers();
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
 
-function setGuildBan(id, guildId) {
+async function setGuildBan(id, guildId) {
     const user = getUserById(id);
     if (user) {
         if(user.isAdmin()) {
             clog.warn(`L'utilisateur ${user.identity.username} est admin, il ne peut pas être banni.`);
             return;
         }
-        user.setBan(guildId);
-        saveUsers();
+        await user.setBan(guildId);
+        await saveUsers();
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
 
-function setFullBan(id) {
+async function setFullBan(id) {
     const user = getUserById(id);
     if (user) {
         if(user.isAdmin()) {
             clog.warn(`L'utilisateur ${user.identity.username} est admin, il ne peut pas être banni.`);
             return;
         }
-        user.setFullBan();
-        saveUsers();
+        await user.setFullBan();
+        await saveUsers();
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
 
-function setGuildOwner(id, guildId, force) {
+
+function deleteAccount(id) {
     const user = getUserById(id);
     if (user) {
-        const ownerLabel = `OWNER_${guildId}`;
-        if (user.labels.includes(ownerLabel) && !force) {
-            user.labels.splice(user.labels.indexOf(ownerLabel), 1);
-            clog.log(`L'utilisateur ${user.identity.username} n'est plus propriétaire du serveur ${guildId}.`);
-        } else {
-            if(force && user.labels.includes(ownerLabel)) {
-                return;
-            }
-            user.labels.push(ownerLabel);
-            clog.log(`L'utilisateur ${user.identity.username} est maintenant propriétaire du serveur ${guildId}.`);
-        }
+        user.labels = user.labels.filter(label => label.includes('BAN'));
+        user.labels.push('DELETED'); // Add a deleted label
+        user.tokens = []; // Clear tokens
+        user.auth = null; // Clear authentication
+        user.identity = { id: user.identity.id, username: user.identity.username }; // Keep only identity information
         saveUsers();
+        clog.log(`Suppression du compte de l'utilisateur ${user.identity.username}.`);
     } else {
         clog.warn(`Utilisateur ${id} non trouvé.`);
     }
 }
-
 
 // USERS DB
 
@@ -473,6 +469,11 @@ function loadUsers() {
     UserDB.load()
     userList = new Array();
     for (const user of UserDB.getData()) {
+        if(user?.labels?.includes("DELETED")) {
+            clog.log(`Utilisateur ${user.identity.id} marqué comme supprimé, ignoré.`);
+            userList.push(new User(null, user.identity, [], user.labels));
+            continue; // Skip deleted users
+        }
         userList.push(new User(user.auth, user.identity, user.tokens, user.labels));
     }
     clog.log(`Chargement de ${userList.length} utilisateurs.`);
@@ -506,7 +507,6 @@ function clearNeedUpdateForUsers() {
 module.exports = {User}   
 module.exports = {
     addUser, 
-    setGuildOwner, 
     setFullBan, 
     removeUser, 
     getUserByToken, 
@@ -522,5 +522,6 @@ module.exports = {
     updateCredientials,
     refreshAllUserInformation,
     updateIdentity,
-    clearNeedUpdateForUsers
+    clearNeedUpdateForUsers,
+    deleteAccount
 };

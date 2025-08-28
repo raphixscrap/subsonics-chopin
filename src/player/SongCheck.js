@@ -26,11 +26,11 @@ function checkSong(song) {
         slog.error("La musique n'a pas d'auteur")
         return false
     }
-    if(!song.duration) {
+    if(song.duration == null) {
         slog.error("La musique n'a pas de durée")
         return false
     }
-    if(!song.readduration) {
+    if(song.readduration == null) {
         slog.error("La musique n'a pas de durée lisible")
         return false
     }

@@ -51,31 +51,17 @@ class Song {
         
     }
 
-    async processYoutubeVideo(video, playlist) {
-        if(playlist) {
+    async processYoutubeVideo(video) {
         this.title = video.title
         this.author = video.author.name
-        this.authorId = video.author.channel_url
-        this.thumbnail = video.thumbnail_url
-        this.url = video.url
+        this.authorId = video.author.url
+        this.thumbnail = video.thumbnail
+        this.url = "https://www.youtube.com/watch?v=" + video.videoId
         this.type = "youtube"
-        this.id = video.id
+        this.id = video.videoId
 
-        this.duration = video.milis_length / 1000
+        this.duration = video.duration.seconds
         this.readduration = getReadableDuration(this.duration)
-        } else { 
-            this.title = video.name
-            this.author = video.author.name
-            this.authorId = video.author.url
-            this.thumbnail = video.thumbnail
-            this.url = video.url
-            this.type = "youtube"
-            this.id = video.id
-
-            this.duration = getSecondsDuration(video.duration)
-            this.readduration = getReadableDuration(this.duration)
-        }
-
         return this
     } 
     
