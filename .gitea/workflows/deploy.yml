@@ -46,7 +46,7 @@ jobs:
               echo "[Subsonics-Deploy] - Suppression de Subsonics : Success"
 
               echo "[Subsonics-Deploy] - Installation de Subsonics : Processing"
-              git clone git@git.raphix.fr:subsonics/chopin.git
+              git clone https://git.raphix.fr/subsonics/chopin.git
               echo "[Subsonics-Deploy] - Installation de Subsonics : Success"
 
               echo "[Subsonics-Deploy] - Installation des dépendances : Processing"
