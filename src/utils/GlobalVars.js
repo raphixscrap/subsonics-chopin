@@ -8,7 +8,7 @@ const __glob = {
     SRC: root + path.sep + "src",
     LOGS: root + path.sep + "logs",
     DATA: root + path.sep + "data",
-    COMMANDS: root + path.sep + "src" + path.sep + "discord" + path.sep + "commands",
+    COMMANDS: root + path.sep + "src" + path.sep + "discord" + path.sep + "Commands",
     METRIC_FILE: root + path.sep + "data" + path.sep + "metrics.json",
     PREVIOUSFILE: root + path.sep + "data" + path.sep + "previous.json",
     USERFILE: root + path.sep + "data" + path.sep + "users.json",
