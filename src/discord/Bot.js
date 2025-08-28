@@ -210,20 +210,12 @@ async function refreshGuilds() {
 
 function checkRequiredPermission(guildMember) {
     const requiredPermissions = [
-        'CreateInstantInvite',    'AddReactions',
-        'Stream',                 'ViewChannel',
-        'SendMessages',           'SendTTSMessages',
-        'EmbedLinks',             'AttachFiles',
-        'ReadMessageHistory',     'UseExternalEmojis',
-        'Connect',                'Speak',
-        'UseVAD',                 'ChangeNickname',
-        'UseApplicationCommands', 'RequestToSpeak',
-        'CreatePublicThreads',    'CreatePrivateThreads',
-        'UseExternalStickers',    'SendMessagesInThreads',
-        'UseEmbeddedActivities',  'UseSoundboard',
-        'UseExternalSounds',      'SendVoiceMessages',
-        'SendPolls',              'UseExternalApps'
-        ]
+    'ViewChannel',           // Voir les salons
+    'SendMessages',          // Envoyer des messages texte
+    'ReadMessageHistory',    // Lire l’historique des messages
+    'Connect',               // Se connecter aux salons vocaux
+    'Speak'                  // Parler dans les salons vocaux
+    ]
     return requiredPermissions.filter(permission => !guildMember.permissions.has(permission));
 }
 
