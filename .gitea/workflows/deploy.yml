@@ -13,19 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Setup SSH
+      - name: Start SSH agent and add key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan raphix.fr >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          ssh-keyscan git.raphix.fr >> ~/.ssh/known_hosts
 
-      - name: Deploy Subsonics
+      - name: Deploy Subsonics as gitlab-ci
         run: |
-          ssh -o StrictHostKeyChecking=no raphix@raphix.fr  << 'EOF'
-            sudo su - gitlab-ci << 'INNER_EOF'
+          ssh -A -o StrictHostKeyChecking=no raphix@raphix.fr << 'EOF'
+            # Passe en gitlab-ci
+            sudo -E -u gitlab-ci bash << 'INNER_EOF'
               set -e
               echo "[Subsonics-Deploy] - Stage - Déploiement  - START "
               echo "[Subsonics-Deploy] - Arrêt de Subsonics : Processing"
@@ -35,20 +38,20 @@ jobs:
               pm2 delete "Subsonics" || true
               echo "[Subsonics-Deploy] - Arrêt de Subsonics : Success"
 
-              mv /home/gitlab-ci/backend/data/ /home/gitlab-ci/tempdata || true
+              mv /home/gitlab-ci/chopin/data/ /home/gitlab-ci/tempdata || true
 
               echo "[Subsonics-Deploy] - Suppression de Subsonics : Processing"
-              rm -rf ./backend
+              rm -rf ./chopin
               echo "[Subsonics-Deploy] - Suppression de Subsonics : Success"
 
               echo "[Subsonics-Deploy] - Installation de Subsonics : Processing"
-              git clone https://git.raphix.fr/subsonics/chopin.git
+              git clone git@git.raphix.fr:subsonics/chopin.git
               echo "[Subsonics-Deploy] - Installation de Subsonics : Success"
 
               echo "[Subsonics-Deploy] - Installation des dépendances : Processing"
-              cd /home/gitlab-ci/backend
-              rm -r /home/gitlab-ci/backend/data || true
-              mv /home/gitlab-ci/tempdata/ /home/gitlab-ci/backend/data || true
+              cd /home/gitlab-ci/chopin
+              rm -r /home/gitlab-ci/chopin/data || true
+              mv /home/gitlab-ci/tempdata/ /home/gitlab-ci/chopin/data || true
               npm install --omit=dev
               echo "[Subsonics-Deploy] - Installation des dépendances : Success"
 
