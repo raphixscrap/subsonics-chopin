@@ -24,35 +24,38 @@ jobs:
 
       - name: Deploy Subsonics
         run: |
-          ssh -o StrictHostKeyChecking=no raphix@raphix.fr << 'EOF'
-            echo "[Subsonics-Deploy] - Stage - Déploiement  - START "
-            echo "[Subsonics-Deploy] - Arrêt de Subsonics : Processing"
-            cd /home/gitlab-ci
-            whoami
-            pm2 stop "Subsonics" || true
-            pm2 delete "Subsonics" || true
-            echo "[Subsonics-Deploy] - Arrêt de Subsonics : Success"
+          ssh -o StrictHostKeyChecking=no raphix@raphix.fr  << 'EOF'
+            sudo su - gitlab-ci << 'INNER_EOF'
+              set -e
+              echo "[Subsonics-Deploy] - Stage - Déploiement  - START "
+              echo "[Subsonics-Deploy] - Arrêt de Subsonics : Processing"
+              cd /home/gitlab-ci
+              whoami
+              pm2 stop "Subsonics" || true
+              pm2 delete "Subsonics" || true
+              echo "[Subsonics-Deploy] - Arrêt de Subsonics : Success"
 
-            mv /home/gitlab-ci/backend/data/ /home/gitlab-ci/tempdata || true
+              mv /home/gitlab-ci/backend/data/ /home/gitlab-ci/tempdata || true
 
-            echo "[Subsonics-Deploy] - Suppression de Subsonics : Processing"
-            rm -rf ./backend
-            echo "[Subsonics-Deploy] - Suppression de Subsonics : Success"
+              echo "[Subsonics-Deploy] - Suppression de Subsonics : Processing"
+              rm -rf ./backend
+              echo "[Subsonics-Deploy] - Suppression de Subsonics : Success"
 
-            echo "[Subsonics-Deploy] - Installation de Subsonics : Processing"
-            git clone https://git.raphix.fr/subsonics/chopin.git
-            echo "[Subsonics-Deploy] - Installation de Subsonics : Success"
+              echo "[Subsonics-Deploy] - Installation de Subsonics : Processing"
+              git clone https://git.raphix.fr/subsonics/chopin.git
+              echo "[Subsonics-Deploy] - Installation de Subsonics : Success"
 
-            echo "[Subsonics-Deploy] - Installation des dépendances : Processing"
-            cd /home/gitlab-ci/backend
-            rm -r /home/gitlab-ci/backend/data || true
-            mv /home/gitlab-ci/tempdata/ /home/gitlab-ci/backend/data || true
-            npm install --omit=dev
-            echo "[Subsonics-Deploy] - Installation des dépendances : Success"
+              echo "[Subsonics-Deploy] - Installation des dépendances : Processing"
+              cd /home/gitlab-ci/backend
+              rm -r /home/gitlab-ci/backend/data || true
+              mv /home/gitlab-ci/tempdata/ /home/gitlab-ci/backend/data || true
+              npm install --omit=dev
+              echo "[Subsonics-Deploy] - Installation des dépendances : Success"
 
-            echo "[Subsonics-Deploy] - Démarrage de Subsonics : Processing"
-            cd /home/gitlab-ci
-            pm2 start subsonic.config.js
-            echo "[Subsonics-Deploy] - Démarrage de Subsonics : Success"
-            echo "[Subsonics-Deploy] - Stage - Déploiement  - END"
+              echo "[Subsonics-Deploy] - Démarrage de Subsonics : Processing"
+              cd /home/gitlab-ci
+              pm2 start subsonic.config.js
+              echo "[Subsonics-Deploy] - Démarrage de Subsonics : Success"
+              echo "[Subsonics-Deploy] - Stage - Déploiement  - END"
+            INNER_EOF
           EOF
