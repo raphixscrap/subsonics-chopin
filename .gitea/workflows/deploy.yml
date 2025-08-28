@@ -26,7 +26,7 @@ jobs:
 
       - name: Deploy Subsonics as gitlab-ci
         run: |
-          ssh -A -o StrictHostKeyChecking=no raphix@raphix.fr << 'EOF'
+          ssh -A -o StrictHostKeyChecking=no raphix@alpha.raphix.fr << 'EOF'
             echo "[Subsonics-Deploy] - Connexion SSH : Success"
             # Passe en gitlab-ci
             sudo -E -u gitlab-ci bash << 'INNER_EOF'
