@@ -11,14 +11,21 @@ async function getStream(song) {
     //  FIXME: Change youtube provider
     
        try {
+        var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
+
+        function cookiesArrayToHeaderString(cookies) {
+            return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+        }
+
 
         const headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
                           'AppleWebKit/537.36 (KHTML, like Gecko) ' +
                           'Chrome/116.0.5845.97 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Cookie': cookiesArrayToHeaderString(cookies)
         };
-        var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
+ 
     
           let stream = ytdl(song.url, { 
                quality: 'highestaudio',
@@ -28,7 +35,7 @@ async function getStream(song) {
                bitrate: 128,
                requestOptions: {
                    headers: headers,
-                   cookies: cookies
+                    
                }
           });
 
