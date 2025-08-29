@@ -18,8 +18,8 @@ async function getStream(song) {
                           'Chrome/116.0.5845.97 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
         };
-        var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
-    
+            var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
+          ytdl.createAgent(cookies)
           let stream = ytdl(song.url, { 
                quality: 'highestaudio',
                highWaterMark: 1 << 30,
@@ -28,7 +28,6 @@ async function getStream(song) {
                bitrate: 128,
                requestOptions: {
                    headers: headers,
-                   cookies: cookies
                }
           });
 
