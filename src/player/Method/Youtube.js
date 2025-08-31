@@ -2,7 +2,6 @@ const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType
 const {LogType} = require('loguix')
 const clog = new LogType("Youtube-Stream")
 const ytdl = require('@distube/ytdl-core')
-const { getRandomIPv6 } = require("@distube/ytdl-core/lib/utils");
 const { __glob } = require('../../utils/GlobalVars');
 const fs = require('fs');
 
@@ -18,9 +17,11 @@ async function getStream(song) {
                           'Chrome/116.0.5845.97 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9'
         };
+
          var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
-          ytdl.createAgent(cookies)
-          let stream = ytdl(song.url, { 
+         const proxy = await JSON.parse(await fs.readFileSync(__glob.PROXY, 'utf-8'));
+          const agent = ytdl.createProxyAgent(proxy, cookies)
+          let stream = ytdl(song.url, {
                quality: 'highestaudio',
                highWaterMark: 1 << 30,
                liveBuffer: 20000,
@@ -28,7 +29,8 @@ async function getStream(song) {
                bitrate: 128,
                requestOptions: {
                 headers: headers,
-               }
+               },
+               agent: agent,
           });
 
         return stream

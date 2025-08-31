@@ -17,7 +17,8 @@ const __glob = {
     MEDIA_DB: root + path.sep + "data" + path.sep + "media.json",
     VERSION: version,
     CHANGELOG_PATH: root + path.sep + "CHANGELOG.html",
-    COOKIES: root + path.sep + "data" + path.sep + "cookies.json"
+    COOKIES: root + path.sep + "data" + path.sep + "cookies.json",
+    PROXY: root + path.sep + "data" + path.sep + "proxy.json"
 }
 
 module.exports = {__glob}
