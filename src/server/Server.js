@@ -419,7 +419,7 @@ function init() {
               // CHECKED : 03/05/2025
             IORequest("/PLAYER/CHANNEL/CHANGE", () => {
                 handlePlayerAction(actualGuildId, (player) => {
-                    const channel = getUserChannel()
+                    const channel = getUserChannel(false, true)
                     if(!channel) {
                         IOAnswer("/PLAYER/CHANNEL/CHANGE", false)
                         return
@@ -873,9 +873,9 @@ function init() {
 
             // Functions 
 
-            function getUserChannel(usual) {
+            function getUserChannel(usual, force) {
                 const botChannel = getBotChannel()
-                if(botChannel) {
+                if(botChannel && !force) {
                     return botChannel
                 }
                 const membersVoices = discordBot.getMembersVoices()
