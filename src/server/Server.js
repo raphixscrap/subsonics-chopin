@@ -19,6 +19,7 @@ const {__glob} = require("../utils/GlobalVars")
 const playlists = require("../playlists/PlaylistManager")
 const history = require("../playlists/History")
 const lyrics = require("../lyrics/Lyrics")
+const serverSettings = require("../discord/ServerSettings")
 const mediaBase = require("../discord/MediaBase")
 const googleApis = require("../playlists/Google/OAuth2")
 const youtubeApi = require("../playlists/Google/YoutubeList")
@@ -33,8 +34,6 @@ const { getMediaInformationFromUrl } = require('../media/MediaInformation')
 const allConnectedUsers = new Array()
 const guildConnectedUsers = new Map()
 const UsersBySocket = new Map()
-
-//TODO: Separate all request in separate files
 
 function init() {
     
@@ -793,7 +792,36 @@ function init() {
                 IOAnswer("/OWNER/USERS/SWITCH_MOD", true)
             })
 
-            
+            IORequest("/OWNER/ROLES/GET", async () => {
+                if(!actualGuildId) return IOAnswer("/OWNER/ROLES/GET", false)
+                const guild = discordBot.getGuilds().get(actualGuildId)
+                if(!socketUser.identity.id === guild.owner) return IOAnswer("/OWNER/ROLES/GET", false)
+                const rolesSecure = discordBot.getGuildRoles(actualGuildId)
+                const actualRole = await serverSettings.getSecureRole(actualGuildId)
+                // Move the actual role at the start of the array
+                if(actualRole) {
+                    const index = rolesSecure.findIndex(r => r.id === actualRole.id)
+                    if(index > -1) {
+                        rolesSecure.unshift(rolesSecure.splice(index, 1)[0])
+                    }
+                } else {
+                    // Find the @everyone role and put it at the start of the array
+                    const index = rolesSecure.findIndex(r => r.name === "@everyone")
+                    if(index > -1) {
+                        rolesSecure.unshift(rolesSecure.splice(index, 1)[0])
+                    }
+                }
+                IOAnswer("/OWNER/ROLES/GET", await rolesSecure)
+            })
+
+            IORequest("/OWNER/ROLES/SET", async (data) => {
+                if(!actualGuildId) return IOAnswer("/OWNER/ROLES/SET", false)
+                const guild = discordBot.getGuilds().get(actualGuildId)
+                if(!socketUser.identity.id === guild.owner) return IOAnswer("/OWNER/ROLES/SET", false)
+                await serverSettings.setSecureRole(actualGuildId, data)
+                IOAnswer("/OWNER/ROLES/SET", true)
+            })
+
             // CHECKED : 24/04/2025
             IORequest("/MOD/USERS/BAN", async (userId) => {
                 if(!userId || !actualGuildId) return IOAnswer("/MOD/USERS/BAN", false)
@@ -907,6 +935,18 @@ function init() {
                        const guildData = guild[1]
                        guildData['members'] = new Array()
                        guildData.serverMember = guild[1].allMembers.length
+                       guildData.restricted = false
+                       const secureRole = serverSettings.getSecureRole(guild[0])
+                       if(secureRole && socketUser.identity.id !== discordBot.getGuilds().get(guild[0]).owner) {
+                        const member = discordBot.getGuildMember(guild[0], socketUser.identity.id)
+                        if(!member.roles.cache.has(secureRole.id) && socketUser.identity.id !== guild[1].owner && !socketUser.isAdmin()) {
+                            guildData.restricted = true
+                        } else {
+                            guildData.restricted = false
+                        }
+                       }
+
+                       guildData.allowed = true
                        for(var user of guildConnectedUsers.get(guild[0]) || []) {
                         const userData = users.getUserById(user.id)
                             if(userData && userData.identity.id != socketUser.identity.id) {
@@ -985,6 +1025,15 @@ function init() {
                 if(!guildId) {
                     wlog.warn("Aucun guildId n'est actif pour l'utilisateur : " + socketUser.identity.username)
                     return false
+                }
+                // Check role if secure role is set
+                const secureRole = serverSettings.getSecureRole(guildId)
+                if(secureRole && socketUser.identity.id !== discordBot.getGuilds().get(guildId).owner) {
+                    const member = discordBot.getGuildMember(guildId, socketUser.identity.id)
+                    if(member.roles.cache.has(secureRole.id) == false) {
+                        wlog.warn("L'utilisateur '" + socketUser.identity.username + "' n'a pas le rôle requis pour accéder à la guilde : " + guildId)
+                        return false
+                    }
                 }
                 // Check if the guildId is referenced in the bot guilds 
                 if(!discordBot.getGuilds().has(guildId)) {

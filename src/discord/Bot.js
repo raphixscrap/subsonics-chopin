@@ -7,6 +7,8 @@ const config = require("../utils/Database/Configuration")
 const metric = require("webmetrik") 
 const { Player } = require("../player/Player")
 const {refreshAllUserInformation} = require("../server/auth/User")
+const serverSettings = require("./ServerSettings")
+const { Embed, EmbedError } = require("./Embed")
 
 const dlog = new LogType("Discord")
 const glog = new LogType("GuildUpdater")
@@ -49,6 +51,29 @@ function getGuildMembers(guildId) {
     return guild.members.cache.map(member => member.user.id)
 }
 
+function getGuildMember(guildId, memberId) {
+    const guild = client.guilds.cache.get(guildId)
+    if(!guild) {
+        dlog.error("Guild not found: " + guildId)
+        return null
+    }
+    return guild.members.cache.get(memberId) || null
+}
+
+function getGuildRoles(guildId) {
+    const guild = client.guilds.cache.get(guildId)
+    if(!guild) {
+        dlog.error("Guild not found: " + guildId)
+        return []
+    }
+    return guild.roles.cache.map(role => ({
+        id: role.id,
+        name: role.name,
+        color: role.color,
+        position: role.position
+    }))
+}
+
 function getChannel(guildId, channelId) {
     return client.guilds.cache.get(guildId).channels.cache.get(channelId)
 }
@@ -77,7 +102,7 @@ function init() {
     operational = true
 })
 
-    client.on("interactionCreate", (interaction) => {
+    client.on("interactionCreate", async (interaction) => {
         
         if(!interaction.isCommand()) return;
 
@@ -87,13 +112,27 @@ function init() {
         numberOfCommandsServer.setValue(numberOfCommandsServer.getValue() + 1)
 
         const command = client.commands.get(interaction.commandName)
+        const roleProtected = await serverSettings.getSecureRole(interaction.guild.id) || false
+        var havePermission = true;
+        if(roleProtected) {
+            await interaction.member.fetch()
+            if(!interaction.member.roles.cache.has(roleProtected.id)) {
+                havePermission = false;
+            }
+        }
 
         try {
             // Create a metric to count the number of commands executed by each user
             const userCommand = new metric.Metric("userCommand_" + interaction.member.user.username, "Nombre de commandes éxécutées par l'utilisateur : " + interaction.member.user.username)
             userCommand.setValue(userCommand.getValue() + 1)
             dlog.log(interaction.member.user.username + "-> /" + interaction.commandName)
-            command.execute(client, interaction)
+            if(havePermission) {
+                 command.execute(client, interaction)
+            } else {
+                const embed = new EmbedError(`L'utilisation du Bot est réservée aux membres ayant le rôle "${roleProtected.name}"`, interaction, true)
+                embed.setTitle("Accès refusé")
+                embed.send()
+            }
         } catch(error) {
 
             dlog.error(interaction.member.user.username + "-> /" + interaction.commandName + " : ERREUR RENCONTRE")
@@ -219,6 +258,6 @@ function checkRequiredPermission(guildMember) {
     return requiredPermissions.filter(permission => !guildMember.permissions.has(permission));
 }
 
-module.exports = {init, getClient, getGuilds, getMembersVoices, getChannel, getGuildMembers, isReady}
+module.exports = {init, getClient, getGuilds, getMembersVoices, getChannel, getGuildMembers, getGuildMember, isReady, getGuildRoles}
 
 

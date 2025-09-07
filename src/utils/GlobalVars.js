@@ -15,6 +15,7 @@ const __glob = {
     PLAYLISTFILE: root + path.sep + "data" + path.sep + "playlists.json",
     HISTORY_DB: root + path.sep + "data" + path.sep + "history.json",
     MEDIA_DB: root + path.sep + "data" + path.sep + "media.json",
+    SERVER_DB: root + path.sep + "data" + path.sep + "servers.json",
     VERSION: version,
     CHANGELOG_PATH: root + path.sep + "CHANGELOG.html",
     COOKIES: root + path.sep + "data" + path.sep + "cookies.json",

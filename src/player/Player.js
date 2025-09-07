@@ -127,7 +127,7 @@ class Player {
 
     checkConnection() {
         if(this.connection === null) {
-            clog.error(`GUILD : ${this.guildId} - La connection n'est pas définie`)
+           // clog.error(`GUILD : ${this.guildId} - La connection n'est pas définie`)
             return true
         }
         if(this.player === null) {
