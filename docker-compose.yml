@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  subsonics-backend:
+    build:
+      context: .   # dossier backend
+      dockerfile: Dockerfile
+    container_name: subsonics-backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - subsonics-backend-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  subsonics-backend-data:

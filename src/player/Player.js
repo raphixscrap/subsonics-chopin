@@ -283,6 +283,7 @@ class Player {
     }
 
     async setDuration(duration) {
+
         //FIXME: SET DURATION FONCTIONNE TRES LENTEMENT
         if (this.checkConnection()) return;
         if (this.queue.current == null) return;

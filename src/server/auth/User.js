@@ -447,7 +447,6 @@ async function setFullBan(id) {
     }
 }
 
-
 function deleteAccount(id) {
     const user = getUserById(id);
     if (user) {
