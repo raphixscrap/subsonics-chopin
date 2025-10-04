@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 4000
 
 # Commande de démarrage
-CMD ["node", "src/utils/main.js"]
+CMD ["npm", "run", "start"]
