@@ -6,10 +6,8 @@ const ffmpeg = require('fluent-ffmpeg')
 
 async function getStream(song) {
        try {
-          
-        return song.url;
-           
-
+           const stream = await fetch(song.url).then(res => res.body);
+           return stream;
        } catch(e) {
             clog.error("Erreur lors de la lecture de la musique : " + song.title)
             clog.error(e)
