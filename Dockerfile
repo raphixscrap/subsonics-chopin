@@ -1,19 +1,14 @@
 FROM node:lts-alpine
 
-# Crée un dossier de travail
 WORKDIR /app
 
-# Copie package.json et package-lock.json
-COPY package*.json ./
+# Installer bash et autres outils utiles
+RUN apk add --no-cache bash
 
-# Installe les dépendances
+COPY package*.json ./
 RUN npm install
 
-# Copie le code source (mais pas le dossier data, qui sera monté en volume)
 COPY . .
 
-# Expose le port backend
 EXPOSE 4000
-
-# Commande de démarrage
 CMD ["npm", "run", "start"]
