@@ -1,46 +1,54 @@
-const {createAudioResource, VoiceConnectionStatus, createAudioPlayer, StreamType} = require('@discordjs/voice');
-const {LogType} = require('loguix')
-const clog = new LogType("Youtube-Stream")
-const ytdl = require('@distube/ytdl-core')
-const { __glob } = require('../../utils/GlobalVars');
-const fs = require('fs');
+const { LogType } = require('loguix');
+const clog = new LogType("Youtube-Stream");
+const { spawn } = require('child_process');
 
 async function getStream(song) {
+    return new Promise((resolve, reject) => {
+        clog.log(`[YT-DLP] Lancement du processus natif pour : ${song.url}`);
 
-    //  FIXME: Change youtube provider
-    
-       try {
+        // On lance yt-dlp directement.
+        // ATTENTION : "yt-dlp" doit être reconnu dans ton terminal (installé dans le PATH)
+        const yt = spawn('yt-dlp', [
+            song.url,
+            '-o', '-',              // Rediriger le son vers la sortie standard (stdout)
+            '-f', 'bestaudio',      // Meilleure qualité audio
+            '--no-warnings',        // Masquer les avertissements
+            '--no-check-certificate', // Évite les erreurs SSL courantes
+            '--prefer-free-formats' // Préférer Opus/WebM (meilleur pour Discord)
+        ]);
 
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-                          'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-                          'Chrome/116.0.5845.97 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
-        };
+        let errorLogs = "";
 
-         var cookies = await JSON.parse(await fs.readFileSync(__glob.COOKIES, 'utf-8'));
-         const proxy = await JSON.parse(await fs.readFileSync(__glob.PROXY, 'utf-8'));
-          const agent = ytdl.createProxyAgent(proxy, cookies)
-          let stream = ytdl(song.url, {
-               quality: 'highestaudio',
-               highWaterMark: 1 << 30,
-               liveBuffer: 20000,
-               dlChunkSize: 0,
-               bitrate: 128,
-               requestOptions: {
-                headers: headers,
-               },
-               agent: agent,
-          });
+        // Capture des erreurs du processus (si yt-dlp râle)
+        yt.stderr.on('data', (data) => {
+            // On ignore les infos de progression [download]
+            const msg = data.toString();
+            if (!msg.includes('[download]')) {
+                errorLogs += msg;
+            }
+        });
 
-        return stream
-    
-    } catch(e) {
-        clog.error("Erreur lors de la récupération du stream : " + song.title)
-        clog.error(e)
-               
-    }
+        // Gestion des erreurs de lancement (ex: yt-dlp n'est pas installé)
+        yt.on('error', (err) => {
+            clog.error("[YT-DLP] Impossible de lancer la commande. Vérifie que yt-dlp est bien installé sur le PC/Serveur !", err);
+            reject(err);
+        });
+
+        // Fin du processus
+        yt.on('close', (code) => {
+            if (code !== 0) {
+                clog.warn(`[YT-DLP] Arrêt avec code ${code}. Détails : ${errorLogs}`);
+            }
+        });
+
+        // Si le flux est créé, on le renvoie immédiatement
+        if (yt.stdout) {
+            clog.log("[YT-DLP] Flux audio capturé avec succès.");
+            resolve(yt.stdout);
+        } else {
+            reject(new Error("Le processus yt-dlp n'a généré aucun flux."));
+        }
+    });
 }
 
-
-module.exports = {getStream}
+module.exports = { getStream };
