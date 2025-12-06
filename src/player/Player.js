@@ -206,13 +206,13 @@ class Player {
         plog.log(`GUILD : ${this.guildId} - Lecture de la musique : ${song.title} - Type : ${song.type}`)   
     }
 
-    async getStream(song) {
+    async getStream(song, duration = 0) {
         let stream = null
         if(song.type == "attachment") {
             stream = await media.getStream(song)
         }
         if(song.type == 'youtube') {
-            stream = await youtube.getStream(song)
+            stream = await youtube.getStream(song, duration)
         }
         if(song.type == "soundcloud") {
             stream = await soundcloud.getStream(song)
@@ -284,18 +284,17 @@ class Player {
 
     async setDuration(duration) {
 
-        //FIXME: SET DURATION FONCTIONNE TRES LENTEMENT
         if (this.checkConnection()) return;
         if (this.queue.current == null) return;
         if (this.currentResource == null) return;
     
         const maxDuration = this.queue.current.duration;
-        if (duration > maxDuration) {
+        if (duration.time > maxDuration) {
             plog.error(`GUILD : ${this.guildId} - La durée demandée dépasse la durée maximale de la musique.`);
             return;
         }
 
-        this.stream = await this.getStream(this.queue.current);
+        this.stream = await this.getStream(this.queue.current, duration.time);
         if (this.stream === null) {
             plog.error(`GUILD : ${this.guildId} - Impossible de lire la musique : ${this.queue.current.title} avec le type : ${this.queue.current.type}`);
             return;
@@ -306,24 +305,13 @@ class Player {
         if(typeof this.stream === "string") {  
             this.stream = fs.createReadStream(this.stream)
         }
-
-        const passThroughStream = new PassThrough();
-        duration = Math.floor(duration.time);
-        ffmpeg(this.stream)
-            .setStartTime(duration) // Démarrer à la position demandée (en secondes)
-            .outputOptions('-f', 'mp3') // Specify output format if needed
-            .on('error', (err) => {
-                plog.error(`GUILD : ${this.guildId} - Une erreur est survenue avec ffmpeg : ${err.message}`);
-            })
-            .pipe(passThroughStream, { end: true });
-
-        this.stream = passThroughStream;
-
         this.playStream(this.stream); // Jouer le nouveau flux
 
-        this.currentResource.playbackDuration = duration * 1000; // Mettre à jour la durée de lecture du resource
+        this.currentResource.playbackDuration = duration.time * 1000; // Mettre à jour la durée de lecture du resource
+        console.log(this.currentResource.playbackDuration)
+        console.log(this.getDuration())
     
-        plog.log(`GUILD : ${this.guildId} - Lecture déplacée à ${duration}s.`);
+        plog.log(`GUILD : ${this.guildId} - Lecture déplacée à ${duration.time}s.`);
         
     }
 

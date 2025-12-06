@@ -28,7 +28,14 @@ function getPersonalHistory(userId) {
  */
 function addToPersonalHistory(userId, entry) {
     hlog.log(`Ajout d'une entrée à l'historique personnel de l'utilisateur : ${userId}`);
+
+    // Check if there is already the same entry (by ID) and remove it to avoid duplicates
+    
     const history = getPersonalHistory(userId);
+    const existingIndex = history.findIndex(e => e.id === entry.id);
+    if (existingIndex !== -1) {
+        history.splice(existingIndex, 1);
+    }
     // Limit to 25 entries
     if (history.length >= 25) {
         history.shift();

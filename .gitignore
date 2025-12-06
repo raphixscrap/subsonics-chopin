@@ -145,3 +145,22 @@ data/
 
 __DEBUG.js
 __TEST.js
+
+# --- YT-DLP / Téléchargements temporaires ---
+# Ignore tous les fichiers contenant "Frag" (votre demande spécifique)
+*Frag*
+
+# Ignore les fichiers partiels classiques (.part, .part-Frag...)
+*.part*
+
+# Ignore les fichiers temporaires de l'ancien format youtube-dl
+*.ytdl
+
+# Ignore les formats temporaires lors du merge (ex: vidéo.f137.webm)
+*.f[0-9]*
+
+# --- SÉCURITÉ (INDISPENSABLE) ---
+# N'oubliez pas d'ignorer votre fichier de cookies pour ne pas le partager !
+cookies.txt
+cookies-*.txt
+tmp
