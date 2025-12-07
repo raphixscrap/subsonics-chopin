@@ -61,38 +61,37 @@ async function getStream(song, seekTime = 0) {
     return new Promise((resolve, reject) => {
         clog.log(`[YT-DLP] Lancement pour : ${song.url} (Début: ${seekTime}s)`);
 
-        const ytArgs = [
+       const ytArgs = [
             song.url,
             '-o', '-',
-            '-f', 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio',
-            // NETWORKS
-            '--force-ipv4',  // INDISPENSABLE : Force la connexion via IPv4 (plus stable pour le streaming)
-            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', // Masque yt-dlp
+            
+            // Sélecteur large : Audio pur OU Vidéo (ffmpeg se débrouillera)
+            '-f', 'bestaudio/best', 
+            
+            // IMPORTANT : On se fait passer pour Edge (Windows) pour correspondre aux cookies
+            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+
+            '--force-ipv4',
             '--no-warnings',
-            // --- GESTION DE LA RAM & FICHIERS ---
-            '--no-part',           // Ne pas créer de fichiers .part
-            '--no-keep-fragments', // Supprimer les fragments immédiatement (s'ils sont créés)
-            '--buffer-size', '16K', // Petit buffer pour forcer le flux continu (évite les pics d'écriture)
-            // --- OPTIONS DIVERS ---
+            '--no-part',
+            '--no-keep-fragments',
+            '--buffer-size', '16K',
             '--no-check-certificate',
-            '--prefer-free-formats',
-            '--ignore-config'
+            '--ignore-config',
+            '--ignore-errors'
         ];
 
         // --- GESTION DU TIMECODE (SEEK) ---
         if (seekTime && seekTime > 0) {
-            // --begin accepte un format "10s", "1m30s" ou juste des secondes.
-            // C'est la méthode la plus fiable pour yt-dlp en streaming.
-            clog.log(`[YT-DLP] Positionnement à ${Math.round(seekTime)} secondes.`);
             ytArgs.push('--download-sections', `*${Math.round(seekTime)}-inf`);
         }
 
-        // --- GESTION DES COOKIES ---
-        if (__glob.COOKIES) {
-            // clog.log(`[YT-DLP] Cookies chargés.`);
-            ytArgs.push('--cookies', __glob.COOKIES);
-            ytArgs.push('--no-cache-dir');
-        }
+        // // --- GESTION DES COOKIES ---
+        // if (__glob.COOKIES) {
+        //     // Utiliser le format Netscape pour les cookies est impératif
+        //     ytArgs.push('--cookies', __glob.COOKIES);
+        //     ytArgs.push('--no-cache-dir'); // Évite les conflits de cache avec les cookies
+        // }
 
         // Lancement du nouveau processus
         const yt = spawn('yt-dlp', ytArgs);
