@@ -70,7 +70,7 @@ async function getStream(song, seekTime = 0) {
             
             // IMPORTANT : On se fait passer pour Edge (Windows) pour correspondre aux cookies
             '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-
+            
             '--force-ipv4',
             '--no-warnings',
             '--no-part',
