@@ -1,7 +1,7 @@
 const { LogType } = require('loguix');
 const clog = new LogType("Youtube-Stream");
 const { spawn } = require('child_process');
-
+const { __glob } = require('../../utils/GlobalVars');
 // Variable globale pour stocker le processus actif
 let currentYtProcess = null;
 
@@ -88,7 +88,7 @@ async function getStream(song, seekTime = 0) {
         }
 
         // --- GESTION DES COOKIES ---
-        if (typeof __glob !== 'undefined' && __glob.COOKIES) {
+        if (__glob.COOKIES) {
             // clog.log(`[YT-DLP] Cookies chargés.`);
             ytArgs.push('--cookies', __glob.COOKIES);
             ytArgs.push('--no-cache-dir');
